@@ -19,8 +19,15 @@
       "dest": "backend/src/server.js"
     },
     {
+      "src": "/health",
+      "dest": "backend/src/server.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "frontend/$1"
+      "dest": "frontend/index.html"
     }
   ]
 }

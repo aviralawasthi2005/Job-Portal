@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: '*', // In production, we'd limit this to our React App domain
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -42,16 +42,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`running`);
-  console.log(` Healthcare Job Portal Server is running!`);
-  console.log(` Local: http://localhost:${PORT}`);
-  console.log(` Health check: http://localhost:${PORT}/health`);
-  console.log(`ok`);
-});
+// Start server only when running locally (not on Vercel serverless)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`running`);
+    console.log(` Healthcare Job Portal Server is running!`);
+    console.log(` Local: http://localhost:${PORT}`);
+    console.log(` Health check: http://localhost:${PORT}/health`);
+    console.log(`ok`);
+  });
+}
 
 export default app;
-
-
-
