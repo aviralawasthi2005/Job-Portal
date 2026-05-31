@@ -51,5 +51,7 @@ app.listen(PORT, () => {
   console.log(`ok`);
 });
 
+export default app;
+
 
 
