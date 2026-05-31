@@ -1,0 +1,20 @@
+{
+  "name": "healthcare-job-portal-backend",
+  "version": "1.0.0",
+  "description": "Backend API proxy for Healthcare Job Portal using Himalayas Remote Jobs API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
