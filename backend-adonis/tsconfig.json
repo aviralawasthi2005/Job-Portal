@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "#controllers/*": ["app/controllers/*"],
+      "#models/*": ["app/models/*"],
+      "#services/*": ["app/services/*"],
+      "#validators/*": ["app/validators/*"],
+      "#start/*": ["start/*"],
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": [
+    "app/**/*.ts",
+    "start/**/*.ts",
+    "bin/**/*.ts",
+    "../shared/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

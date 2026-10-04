@@ -1,19 +1,36 @@
 {
-  "name": "healthcare-job-portal",
-  "version": "1.0.0",
-  "description": "Healthcare Job Portal - Full Stack Monorepo",
+  "name": "healthcare-job-portal-monorepo",
+  "version": "2.0.0",
+  "description": "Healthcare Job Portal - Full Stack Multi-App Monorepo (TypeScript, AdonisJS, Svelte, React, Express, Python, n8n)",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev:svelte": "npm run dev --prefix frontend-svelte",
+    "dev:adonis": "npm run dev --prefix backend-adonis",
+    "dev:python": "python -m uvicorn app.main:app --app-dir python-service --port 8000 --reload",
+    "sync:healthcare": "python python-service/cli_sync.py --limit 150",
+    "dev:react": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "build:svelte": "npm run build --prefix frontend-svelte",
+    "build:adonis": "npm run build --prefix backend-adonis",
+    "build:react": "npm run build --prefix frontend",
+    "build:all": "npm run build:adonis && npm run build:svelte && npm run build:react",
+    "install:all": "npm install && npm install --prefix backend-adonis && npm install --prefix frontend-svelte && npm install --prefix backend && npm install --prefix frontend",
+    "type-check": "tsc --noEmit && npm run lint --prefix backend-adonis",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:n8n": "docker compose up -d n8n",
+    "docker:python": "docker compose up -d python-service",
+    "dev:n8n": "npx n8n start",
+    "n8n:status": "curl -s http://localhost:5678/healthz || echo 'n8n is offline'"
+  },
   "dependencies": {
     "axios": "^1.6.8",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2"
   },
-  "scripts": {
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm install && npm run build",
-    "install:all": "cd frontend && npm install && cd ../backend && npm install"
+  "devDependencies": {
+    "typescript": "^5.4.5"
   }
 }

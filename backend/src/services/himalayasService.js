@@ -59,20 +59,21 @@ const EXCLUDED_TITLE_KEYWORDS = [
   'software engineer', 'full stack', 'full-stack', 'video editor', 'video editing', 'devops', 
   'graphic designer', 'copywriter', 'seo specialist', 'web developer', 'backend developer', 
   'frontend developer', 'system administrator', 'sysadmin', 'sales representative', 'telemarketer',
-  'video producer'
+  'video producer', 'accountant', 'accounting', 'bookkeeper', 'sales executive', 'account executive',
+  'sdr', 'bdr', 'enterprise sales', 'financial analyst', 'recruiter', 'product manager'
 ];
 
 const isHealthcareJob = (job, category = null) => {
   const title = normalizeText(job.title);
   const excerpt = normalizeText(job.excerpt);
-  const description = normalizeText(job.description);
+  const categories = (job.categories || []).map(c => normalizeText(c));
+  const categoriesStr = categories.join(' ');
 
   const titleLower = title.toLowerCase();
   
-  // Exclude non-healthcare generic tech/media/sales roles
+  // Exclude non-healthcare generic tech/media/sales/finance roles
   const hasExcludedKeyword = EXCLUDED_TITLE_KEYWORDS.some(k => titleLower.includes(k));
   if (hasExcludedKeyword) {
-    // Exception: Keep if the title explicitly contains highly specific clinical/medical terms
     const hasSpecificClinical = ['doctor', 'nurse', 'biomedical', 'biotech', 'clinical', 'pharmacist', 'dentist'].some(c => titleLower.includes(c));
     if (!hasSpecificClinical) {
       return false;
@@ -83,37 +84,25 @@ const isHealthcareJob = (job, category = null) => {
   if (category && HEALTHCARE_CATEGORIES[category]) {
     const keywords = HEALTHCARE_CATEGORIES[category];
     return keywords.some(keyword => {
-      if (keyword.length <= 3) {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-        return regex.test(title) || regex.test(excerpt) || regex.test(description);
-      }
-      return title.includes(keyword) || excerpt.includes(keyword) || description.includes(keyword);
+      const regex = keyword.length <= 4 ? new RegExp(`\\b${keyword}\\b`, 'i') : new RegExp(keyword, 'i');
+      return regex.test(title) || regex.test(categoriesStr) || regex.test(excerpt.slice(0, 300));
     });
   }
 
-  // 2. If no category is chosen, screen general healthcare/biotech keywords
-  
-  // A. Check high-confidence clinical keywords anywhere (including full description)
-  const hasHighConfidence = HIGH_CONFIDENCE_KEYWORDS.some(keyword => {
-    if (keyword.length <= 3) {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-      return regex.test(title) || regex.test(excerpt) || regex.test(description);
-    }
-    return title.includes(keyword) || excerpt.includes(keyword) || description.includes(keyword);
+  // 2. Check structured categories first
+  const hasCategoryMatch = HIGH_CONFIDENCE_KEYWORDS.some(keyword => {
+    const regex = keyword.length <= 4 ? new RegExp(`\\b${keyword}\\b`, 'i') : new RegExp(keyword, 'i');
+    return regex.test(categoriesStr);
+  });
+  if (hasCategoryMatch) return true;
+
+  // 3. Check high-confidence keywords ONLY in TITLE and first 300 characters of excerpt (NOT full description to avoid benefits false positives)
+  const hasTitleMatch = HIGH_CONFIDENCE_KEYWORDS.some(keyword => {
+    const regex = keyword.length <= 4 ? new RegExp(`\\b${keyword}\\b`, 'i') : new RegExp(keyword, 'i');
+    return regex.test(title) || regex.test(excerpt.slice(0, 300));
   });
 
-  if (hasHighConfidence) return true;
-
-  // B. Check generic keywords ONLY in the TITLE or EXCERPT to completely avoid "health benefits" false positives in full descriptions!
-  const hasGeneric = GENERIC_HEALTHCARE_KEYWORDS.some(keyword => {
-    if (keyword.length <= 3) {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-      return regex.test(title) || regex.test(excerpt);
-    }
-    return title.includes(keyword) || excerpt.includes(keyword);
-  });
-
-  return hasGeneric;
+  return hasTitleMatch;
 };
 
 /**

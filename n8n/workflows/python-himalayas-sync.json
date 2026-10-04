@@ -1,0 +1,83 @@
+{
+  "name": "Healthcare Job Portal - Python Strict Sync Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Every 6 Hours Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PYTHON_SERVICE_URL || 'http://localhost:8000' }}/api/v1/jobs/sync?limit=150",
+        "options": {}
+      },
+      "name": "Scrape & Filter Strictly with Python",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend-adonis:3333/api/v1/n8n/webhook-receive",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"cache.flush\",\n  \"data\": {\n    \"syncedJobs\": {{ $json.totalValidHealthcareJobs }},\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n  }\n}",
+        "options": {}
+      },
+      "name": "Flush Backend Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        700,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours Schedule": {
+      "main": [
+        [
+          {
+            "node": "Scrape & Filter Strictly with Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape & Filter Strictly with Python": {
+      "main": [
+        [
+          {
+            "node": "Flush Backend Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

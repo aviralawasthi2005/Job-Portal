@@ -1,0 +1,148 @@
+{
+  "name": "Healthcare Job Portal - New Job Dispatcher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "healthcare-new-job",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "healthcare-new-job-trigger"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "notificationTitle",
+              "value": "=🚨 New Healthcare Opening: {{ $json.body.job.title }} at {{ $json.body.job.companyName }}"
+            },
+            {
+              "name": "jobUrl",
+              "value": "={{ $json.body.job.applicationUrl || 'http://localhost:5174' }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $json.body.job.category }}"
+            },
+            {
+              "name": "salaryString",
+              "value": "={{ $json.body.job.salaryString || 'Competitive Salary' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Job Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.category }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Filter Valid Category",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"content\": \"🩺 **New Healthcare Job Posted!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.notificationTitle }}\",\n      \"url\": \"{{ $json.jobUrl }}\",\n      \"color\": 3447003,\n      \"fields\": [\n        {\n          \"name\": \"Category\",\n          \"value\": \"{{ $json.category }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Compensation\",\n          \"value\": \"{{ $json.salaryString }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Healthcare Job Portal Automation\"\n      }\n    }\n  ]\n}"
+      },
+      "name": "Dispatch to Discord / Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        920,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@pulsehealthjobs.org",
+        "toEmail": "={{ $env.NOTIFICATION_EMAIL || 'candidates@pulsehealthjobs.org' }}",
+        "subject": "=New Healthcare Opportunity: {{ $json.notificationTitle }}",
+        "text": "=A new position has just been posted to the Healthcare Job Portal.\n\nPosition: {{ $json.notificationTitle }}\nCategory: {{ $json.category }}\nSalary: {{ $json.salaryString }}\nApply here: {{ $json.jobUrl }}\n\nBest regards,\nHealthcare Job Portal Automated Alerts"
+      },
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        920,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Job Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Job Payload": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid Category": {
+      "main": [
+        [
+          {
+            "node": "Dispatch to Discord / Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

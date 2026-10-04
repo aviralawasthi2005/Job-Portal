@@ -1,0 +1,133 @@
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: healthcare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-healthcare_job_portal}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - healthcare-net
+
+  # ----------------------------------------------------------------------------
+  # Redis Cache & Message Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: healthcare-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - healthcare-net
+
+  # ----------------------------------------------------------------------------
+  # Python Healthcare Intelligence & Resume Analyzer Service
+  # ----------------------------------------------------------------------------
+  python-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    container_name: healthcare-python-intelligence
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHON_PORT=8000
+      - HIMALAYAS_API_URL=https://himalayas.app/jobs/api
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/healthcare-new-job
+    networks:
+      - healthcare-net
+
+  # ----------------------------------------------------------------------------
+  # n8n Workflow Automation Engine
+  # ----------------------------------------------------------------------------
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: healthcare-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=${N8N_PORT:-5678}
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - NODE_ENV=${NODE_ENV:-development}
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=UTC
+    volumes:
+      - n8ndata:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    networks:
+      - healthcare-net
+
+  # ----------------------------------------------------------------------------
+  # AdonisJS TypeScript Backend
+  # ----------------------------------------------------------------------------
+  backend-adonis:
+    build:
+      context: .
+      dockerfile: backend-adonis/Dockerfile
+    container_name: healthcare-adonis
+    restart: unless-stopped
+    ports:
+      - "3333:3333"
+    environment:
+      - PORT=3333
+      - HOST=0.0.0.0
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=healthcare_job_portal
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHON_SERVICE_URL=http://python-service:8000
+      - N8N_WEBHOOK_NEW_JOB=http://n8n:5678/webhook/healthcare-new-job
+      - N8N_WEBHOOK_APPLICATION=http://n8n:5678/webhook/candidate-application
+    depends_on:
+      - postgres
+      - redis
+      - n8n
+      - python-service
+    networks:
+      - healthcare-net
+
+  # ----------------------------------------------------------------------------
+  # SvelteJS Modern Frontend
+  # ----------------------------------------------------------------------------
+  frontend-svelte:
+    build:
+      context: .
+      dockerfile: frontend-svelte/Dockerfile
+    container_name: healthcare-svelte
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_ADONIS_API_URL=http://localhost:3333/api/v1
+      - VITE_EXPRESS_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend-adonis
+    networks:
+      - healthcare-net
+
+networks:
+  healthcare-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  n8ndata:

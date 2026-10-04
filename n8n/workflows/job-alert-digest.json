@@ -1,0 +1,104 @@
+{
+  "name": "Healthcare Job Portal - Scheduled Daily Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily 8 AM Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://backend-adonis:3333/api/v1/jobs?limit=5&sort=newest",
+        "options": {}
+      },
+      "name": "Fetch Latest Jobs from API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const jobs = $input.first().json.data || [];\nlet summary = \"🌅 **Good Morning! Here are today's top healthcare job openings:**\\n\\n\";\nfor (const job of jobs) {\n  summary += `• **${job.title}** at ${job.companyName} (${job.location}) - ${job.salaryString || 'Competitive'}\\n  Link: ${job.applicationUrl || 'http://localhost:5174'}\\n\\n`;\n}\nreturn [{ json: { digestMessage: summary, jobCount: jobs.length } }];"
+      },
+      "name": "Compile Daily Digest Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"content\": {{ JSON.stringify($json.digestMessage) }}\n}"
+      },
+      "name": "Broadcast to Discord / Community",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        920,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 8 AM Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Latest Jobs from API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Latest Jobs from API": {
+      "main": [
+        [
+          {
+            "node": "Compile Daily Digest Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Daily Digest Markdown": {
+      "main": [
+        [
+          {
+            "node": "Broadcast to Discord / Community",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
