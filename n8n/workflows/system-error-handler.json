@@ -1,0 +1,76 @@
+{
+  "name": "Healthcare Job Portal - Global Error Alert Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Global Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json;\n\nconst execution = errorData.execution || {};\nconst workflow = errorData.workflow || {};\nconst error = execution.error || {};\n\nconst workflowName = workflow.name || 'Unknown Healthcare Workflow';\nconst workflowId = workflow.id || 'N/A';\nconst executionId = execution.id || 'N/A';\nconst nodeName = error.node?.name || 'Unknown Node';\nconst errorMessage = error.message || 'An unhandled execution error occurred in n8n.';\nconst timestamp = new Date().toISOString();\n\nreturn [{\n  json: {\n    workflowName,\n    workflowId,\n    executionId,\n    nodeName,\n    errorMessage,\n    timestamp,\n    alertMarkdown: `🚨 **n8n Automation Alert: Workflow Failure**\\n\\n• **Workflow:** ${workflowName} (ID: \\`${workflowId}\\`)\\n• **Failed Node:** \\`${nodeName}\\`\\n• **Execution ID:** \\`${executionId}\\`\\n• **Error Message:** ${errorMessage}\\n• **Timestamp:** ${timestamp}\\n\\n*Please check your n8n console at http://localhost:5678/execution/${executionId} to inspect.*`\n  }\n}];"
+      },
+      "name": "Format Error Diagnostics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
+        "jsonParameters": true,
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 2,
+          "waitBetweenTries": 1000
+        },
+        "bodyParametersJson": "={\n  \"content\": {{ JSON.stringify($json.alertMarkdown) }}\n}"
+      },
+      "name": "Dispatch Error Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        720,
+        300
+      ],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Global Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Diagnostics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Diagnostics": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

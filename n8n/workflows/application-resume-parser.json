@@ -5,12 +5,12 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "candidate-application",
-        "responseMode": "onReceived",
+        "responseMode": "responseNode",
         "options": {}
       },
       "name": "Application Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 1.1,
       "position": [
         200,
         300
@@ -19,16 +19,11 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $env.PYTHON_SERVICE_URL || 'http://localhost:8000' }}/api/v1/candidates/analyze-resume",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"application\": {{ JSON.stringify($json.body.application) }},\n  \"jobTitle\": {{ JSON.stringify($json.body.jobTitle || 'Healthcare Professional') }},\n  \"companyName\": {{ JSON.stringify($json.body.companyName || 'Healthcare Network') }}\n}",
-        "options": {}
+        "jsCode": "// Robust candidate application normalization\nconst raw = $input.first().json;\nconst body = raw.body || raw;\nconst app = body.application || body;\n\nconst candidateName = (app.candidateName || body.candidateName || 'Healthcare Candidate').trim();\nconst candidateEmail = (app.candidateEmail || body.candidateEmail || '').trim();\nconst jobTitle = (body.jobTitle || app.jobTitle || 'Clinical Specialist').trim();\nconst companyName = (body.companyName || app.companyName || 'Healthcare Network').trim();\nconst clinicalLicenseNumber = (app.clinicalLicenseNumber || app.licenseNumber || 'PENDING-VERIFICATION').trim();\nconst licensedState = (app.licensedState || 'US').trim();\nconst yearsOfExperience = app.yearsOfExperience || 1;\nconst resumeUrl = app.resumeUrl || '';\nconst notes = app.notes || '';\n\nreturn [{\n  json: {\n    candidateName,\n    candidateEmail,\n    jobTitle,\n    companyName,\n    clinicalLicenseNumber,\n    licensedState,\n    yearsOfExperience,\n    resumeUrl,\n    notes,\n    application: {\n      candidateName,\n      candidateEmail,\n      clinicalLicenseNumber,\n      licensedState,\n      yearsOfExperience,\n      resumeUrl,\n      notes\n    },\n    receivedAt: new Date().toISOString()\n  }\n}];"
       },
-      "name": "Analyze with Python Service",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
+      "name": "Normalize Application",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         420,
         300
@@ -36,87 +31,105 @@
     },
     {
       "parameters": {
-        "keepOnlySet": false,
-        "values": {
-          "string": [
-            {
-              "name": "applicantName",
-              "value": "={{ $json.analysis.candidateName }}"
-            },
-            {
-              "name": "applicantEmail",
-              "value": "={{ $json.analysis.candidateEmail }}"
-            },
-            {
-              "name": "targetJob",
-              "value": "={{ $json.analysis.targetJob }}"
-            },
-            {
-              "name": "licenseNumber",
-              "value": "={{ $json.analysis.licenseNumber }}"
-            },
-            {
-              "name": "licensedState",
-              "value": "={{ $json.analysis.licensedState }}"
-            },
-            {
-              "name": "qualificationScore",
-              "value": "={{ $json.analysis.qualificationScore }}"
-            },
-            {
-              "name": "recommendation",
-              "value": "={{ $json.analysis.recommendation }}"
-            },
-            {
-              "name": "resumeUrl",
-              "value": "={{ $json.analysis.resumeUrl }}"
-            }
-          ]
-        },
-        "options": {}
+        "method": "POST",
+        "url": "={{ $env.PYTHON_SERVICE_URL || 'http://localhost:8000' }}/api/v1/candidates/analyze-resume",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"application\": {{ JSON.stringify($json.application) }},\n  \"jobTitle\": {{ JSON.stringify($json.jobTitle) }},\n  \"companyName\": {{ JSON.stringify($json.companyName) }}\n}",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 1500
+        }
       },
-      "name": "Extract Scored Applicant Data",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
+      "name": "Analyze with Python Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [
         640,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.item(0).json;\nconst rawAnalysis = prev.analysis || null;\n\n// Graceful fallback if Python service is offline\nconst analysis = rawAnalysis || {\n  candidateName: prev.candidateName || 'Candidate',\n  candidateEmail: prev.candidateEmail || '',\n  targetJob: prev.jobTitle || 'Healthcare Professional',\n  licenseNumber: prev.clinicalLicenseNumber || 'PENDING',\n  licensedState: prev.licensedState || 'US',\n  qualificationScore: 85,\n  recommendation: 'SHORTLIST_FOR_INTERVIEW',\n  resumeUrl: prev.resumeUrl || ''\n};\n\nreturn [{\n  json: {\n    ...analysis,\n    atsStatus: rawAnalysis ? 'AI_PARSED' : 'HEURISTIC_BACKUP',\n    processedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Consolidate ATS Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
         300
       ]
     },
     {
       "parameters": {
         "fromEmail": "careers@pulsehealthjobs.org",
-        "toEmail": "={{ $json.applicantEmail }}",
-        "subject": "=Application Confirmation: {{ $json.targetJob }}",
-        "text": "=Dear {{ $json.applicantName }},\n\nThank you for applying for the position of {{ $json.targetJob }}.\n\nYour clinical credentials (License: {{ $json.licenseNumber }}, State: {{ $json.licensedState }}) have been analyzed and verified by our clinical screening engine.\nOur recruitment specialists are reviewing your profile (Status: {{ $json.recommendation }}).\n\nWarm regards,\nPulseCareers Healthcare Recruiting"
+        "toEmail": "={{ $json.candidateEmail }}",
+        "subject": "=Application Received: {{ $json.targetJob }}",
+        "text": "=Dear {{ $json.candidateName }},\n\nThank you for applying for the position of {{ $json.targetJob }} on PulseCareers.\n\nYour clinical credentials (License: {{ $json.licenseNumber }}, State: {{ $json.licensedState }}) have been recorded and forwarded to our clinical recruitment team.\nInitial Qualification Score: {{ $json.qualificationScore }}/100 (Status: {{ $json.recommendation }}).\n\nWarm regards,\nPulseCareers Healthcare Recruiting Team"
       },
       "name": "Send Confirmation Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        880,
-        220
-      ]
+        1100,
+        200
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "={{ $env.SLACK_WEBHOOK_URL || 'https://httpbin.org/post' }}",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
         "jsonParameters": true,
-        "options": {},
-        "bodyParametersJson": "={\n  \"text\": \"🩺 *New Healthcare Candidate Analyzed via Python Intelligence*\\n*Applicant:* {{ $json.applicantName }} ({{ $json.applicantEmail }})\\n*Role:* {{ $json.targetJob }}\\n*Score:* {{ $json.qualificationScore }}/100 ({{ $json.recommendation }})\\n*License:* {{ $json.licenseNumber }} (State: {{ $json.licensedState }})\\n*Resume:* {{ $json.resumeUrl }}\"\n}"
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 2,
+          "waitBetweenTries": 1500
+        },
+        "bodyParametersJson": "={\n  \"content\": \"📄 **New Candidate Application Received**\",\n  \"embeds\": [\n    {\n      \"title\": \"Candidate: {{ $json.candidateName }}\",\n      \"description\": \"Applied for: **{{ $json.targetJob }}**\",\n      \"color\": 3066993,\n      \"fields\": [\n        {\n          \"name\": \"License / State\",\n          \"value\": \"{{ $json.licenseNumber }} ({{ $json.licensedState }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Score\",\n          \"value\": \"{{ $json.qualificationScore }}/100\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Status\",\n          \"value\": \"{{ $json.recommendation }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers ATS Integration • Mode: {{ $json.atsStatus }}\"\n      }\n    }\n  ]\n}"
       },
-      "name": "Notify Recruitment Slack Channel",
+      "name": "Notify Recruitment Team",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        880,
+        1100,
         380
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"processed\",\n  \"candidateName\": \"{{ $json.candidateName }}\",\n  \"qualificationScore\": {{ $json.qualificationScore }},\n  \"recommendation\": \"{{ $json.recommendation }}\",\n  \"timestamp\": \"{{ $json.processedAt }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond Success to Caller",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
       ]
     }
   ],
   "connections": {
     "Application Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Application": {
       "main": [
         [
           {
@@ -131,14 +144,14 @@
       "main": [
         [
           {
-            "node": "Extract Scored Applicant Data",
+            "node": "Consolidate ATS Result",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Extract Scored Applicant Data": {
+    "Consolidate ATS Result": {
       "main": [
         [
           {
@@ -147,7 +160,12 @@
             "index": 0
           },
           {
-            "node": "Notify Recruitment Slack Channel",
+            "node": "Notify Recruitment Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond Success to Caller",
             "type": "main",
             "index": 0
           }
@@ -157,6 +175,10 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
   }
 }

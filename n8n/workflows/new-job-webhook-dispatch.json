@@ -5,48 +5,27 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "healthcare-new-job",
-        "responseMode": "onReceived",
+        "responseMode": "responseNode",
         "options": {}
       },
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 1.1,
       "position": [
-        240,
+        200,
         300
       ],
       "webhookId": "healthcare-new-job-trigger"
     },
     {
       "parameters": {
-        "keepOnlySet": false,
-        "values": {
-          "string": [
-            {
-              "name": "notificationTitle",
-              "value": "=🚨 New Healthcare Opening: {{ $json.body.job.title }} at {{ $json.body.job.companyName }}"
-            },
-            {
-              "name": "jobUrl",
-              "value": "={{ $json.body.job.applicationUrl || 'http://localhost:5174' }}"
-            },
-            {
-              "name": "category",
-              "value": "={{ $json.body.job.category }}"
-            },
-            {
-              "name": "salaryString",
-              "value": "={{ $json.body.job.salaryString || 'Competitive Salary' }}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Robust Normalization of incoming job payload\nconst raw = $input.first().json;\nconst job = raw.body?.job || raw.job || raw.body || raw;\n\nconst title = (job.title || 'Healthcare Professional Opening').trim();\nconst companyName = (job.companyName || 'Healthcare Provider').trim();\nconst category = (job.category || 'Healthcare').trim();\nconst location = (job.location || 'United States / Remote').trim();\nconst workplaceType = (job.workplaceType || 'Remote').trim();\nconst salaryString = (job.salaryString || '$90,000 - $140,000 / year').trim();\nconst applicationUrl = (job.applicationUrl || 'http://localhost:5174').trim();\nconst guid = job.guid || job.id || `gen-${Date.now()}`;\nconst credentials = Array.isArray(job.credentials) ? job.credentials : [];\n\nreturn [{\n  json: {\n    guid,\n    title,\n    companyName,\n    category,\n    location,\n    workplaceType,\n    salaryString,\n    applicationUrl,\n    credentials,\n    notificationTitle: `🚨 New Healthcare Opening: ${title} at ${companyName}`,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "name": "Format Job Payload",
-      "type": "n8n-nodes-base.set",
+      "name": "Normalize & Sanitize Payload",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
+        420,
         300
       ]
     },
@@ -55,17 +34,17 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json.category }}",
+              "value1": "={{ $json.title }}",
               "operation": "isNotEmpty"
             }
           ]
         }
       },
-      "name": "Filter Valid Category",
+      "name": "Validate Job Has Title",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        680,
+        640,
         300
       ]
     },
@@ -74,30 +53,68 @@
         "requestMethod": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
         "jsonParameters": true,
-        "options": {},
-        "bodyParametersJson": "={\n  \"content\": \"🩺 **New Healthcare Job Posted!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.notificationTitle }}\",\n      \"url\": \"{{ $json.jobUrl }}\",\n      \"color\": 3447003,\n      \"fields\": [\n        {\n          \"name\": \"Category\",\n          \"value\": \"{{ $json.category }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Compensation\",\n          \"value\": \"{{ $json.salaryString }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Healthcare Job Portal Automation\"\n      }\n    }\n  ]\n}"
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000
+        },
+        "bodyParametersJson": "={\n  \"content\": \"🩺 **New Healthcare Job Posted to PulseCareers!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.notificationTitle }}\",\n      \"url\": \"{{ $json.applicationUrl }}\",\n      \"color\": 2267807,\n      \"fields\": [\n        {\n          \"name\": \"Specialty\",\n          \"value\": \"{{ $json.category }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Workplace\",\n          \"value\": \"{{ $json.workplaceType }} ({{ $json.location }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Compensation\",\n          \"value\": \"{{ $json.salaryString }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Healthcare Job Portal Automation • Verified ATS\"\n      }\n    }\n  ]\n}"
       },
       "name": "Dispatch to Discord / Webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        920,
-        220
-      ]
+        880,
+        200
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
         "fromEmail": "alerts@pulsehealthjobs.org",
         "toEmail": "={{ $env.NOTIFICATION_EMAIL || 'candidates@pulsehealthjobs.org' }}",
         "subject": "=New Healthcare Opportunity: {{ $json.notificationTitle }}",
-        "text": "=A new position has just been posted to the Healthcare Job Portal.\n\nPosition: {{ $json.notificationTitle }}\nCategory: {{ $json.category }}\nSalary: {{ $json.salaryString }}\nApply here: {{ $json.jobUrl }}\n\nBest regards,\nHealthcare Job Portal Automated Alerts"
+        "text": "=A new position has just been posted to the Healthcare Job Portal.\n\nPosition: {{ $json.notificationTitle }}\nCategory: {{ $json.category }}\nLocation: {{ $json.location }} ({{ $json.workplaceType }})\nSalary: {{ $json.salaryString }}\nApply here: {{ $json.applicationUrl }}\n\nBest regards,\nPulseCareers Automated Alerts Engine"
       },
       "name": "Send Email Alert",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        920,
+        880,
         380
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"dispatched\",\n  \"jobGuid\": \"{{ $json.guid }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"error\": \"Validation failed: Missing job title\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "name": "Respond Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        880,
+        500
       ]
     }
   ],
@@ -106,25 +123,25 @@
       "main": [
         [
           {
-            "node": "Format Job Payload",
+            "node": "Normalize & Sanitize Payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Format Job Payload": {
+    "Normalize & Sanitize Payload": {
       "main": [
         [
           {
-            "node": "Filter Valid Category",
+            "node": "Validate Job Has Title",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter Valid Category": {
+    "Validate Job Has Title": {
       "main": [
         [
           {
@@ -136,6 +153,18 @@
             "node": "Send Email Alert",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Invalid",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -143,6 +172,10 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
   }
 }

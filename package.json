@@ -22,7 +22,8 @@
     "docker:n8n": "docker compose up -d n8n",
     "docker:python": "docker compose up -d python-service",
     "dev:n8n": "npx n8n start",
-    "n8n:status": "curl -s http://localhost:5678/healthz || echo 'n8n is offline'"
+    "n8n:status": "curl -s http://localhost:5678/healthz || echo 'n8n is offline'",
+    "n8n:diagnose": "node n8n/manage-workflows.js"
   },
   "dependencies": {
     "axios": "^1.6.8",

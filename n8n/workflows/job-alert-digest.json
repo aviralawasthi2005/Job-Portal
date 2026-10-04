@@ -22,26 +22,31 @@
     },
     {
       "parameters": {
-        "url": "http://backend-adonis:3333/api/v1/jobs?limit=5&sort=newest",
-        "options": {}
+        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:3333' }}/api/v1/jobs?limit=5&sort=newest",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000
+        }
       },
       "name": "Fetch Latest Jobs from API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        440,
+        460,
         300
-      ]
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const jobs = $input.first().json.data || [];\nlet summary = \"🌅 **Good Morning! Here are today's top healthcare job openings:**\\n\\n\";\nfor (const job of jobs) {\n  summary += `• **${job.title}** at ${job.companyName} (${job.location}) - ${job.salaryString || 'Competitive'}\\n  Link: ${job.applicationUrl || 'http://localhost:5174'}\\n\\n`;\n}\nreturn [{ json: { digestMessage: summary, jobCount: jobs.length } }];"
+        "jsCode": "const response = $input.first().json || {};\nconst jobs = response.data || [];\n\nif (jobs.length === 0) {\n  return [{\n    json: {\n      digestMessage: \"🌅 **PulseCareers Daily Digest**\\n\\nAll healthcare positions are currently up to date. Visit http://localhost:5174 to view all active openings.\",\n      jobCount: 0\n    }\n  }];\n}\n\nlet summary = \"🌅 **Good Morning! Here are today's top healthcare job openings on PulseCareers:**\\n\\n\";\nfor (const job of jobs) {\n  const salary = job.salaryString ? `(${job.salaryString})` : '';\n  summary += `• **${job.title}** at ${job.companyName} [${job.workplaceType || 'Remote'}] ${salary}\\n  Apply: ${job.applicationUrl || 'http://localhost:5174'}\\n\\n`;\n}\nsummary += \"*Automated daily healthcare career dispatch by PulseCareers n8n engine.*\";\n\nreturn [{\n  json: {\n    digestMessage: summary,\n    jobCount: jobs.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "name": "Compile Daily Digest Markdown",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        680,
+        700,
         300
       ]
     },
@@ -50,16 +55,21 @@
         "requestMethod": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
         "jsonParameters": true,
-        "options": {},
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000
+        },
         "bodyParametersJson": "={\n  \"content\": {{ JSON.stringify($json.digestMessage) }}\n}"
       },
       "name": "Broadcast to Discord / Community",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        920,
+        940,
         300
-      ]
+      ],
+      "continueOnFail": true
     }
   ],
   "connections": {
@@ -99,6 +109,8 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all"
   }
 }

@@ -24,32 +24,41 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PYTHON_SERVICE_URL || 'http://localhost:8000' }}/api/v1/jobs/sync?limit=150",
-        "options": {}
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 3000
+        }
       },
       "name": "Scrape & Filter Strictly with Python",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        440,
+        460,
         300
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://backend-adonis:3333/api/v1/n8n/webhook-receive",
+        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:3333' }}/api/v1/n8n/webhook-receive",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"event\": \"cache.flush\",\n  \"data\": {\n    \"syncedJobs\": {{ $json.totalValidHealthcareJobs }},\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n  }\n}",
-        "options": {}
+        "jsonBody": "={\n  \"event\": \"cache.flush\",\n  \"data\": {\n    \"syncedJobs\": {{ $json.totalValidHealthcareJobs || 0 }},\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n  }\n}",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000
+        }
       },
       "name": "Flush Backend Cache",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        700,
+        720,
         300
-      ]
+      ],
+      "continueOnFail": true
     }
   ],
   "connections": {
@@ -78,6 +87,8 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all"
   }
 }

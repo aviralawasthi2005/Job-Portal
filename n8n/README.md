@@ -1,43 +1,72 @@
-# n8n Workflow Automation Engine for Healthcare Job Portal
+# 🤖 Enterprise n8n Automation Engine — Healthcare Job Portal
 
-This directory houses the workflow automation specifications, triggers, and templates for the Healthcare Job Portal.
-
-## 🚀 Workflows Overview
-
-| Workflow | Trigger Type | File | Description |
-| :--- | :--- | :--- | :--- |
-| **New Job Multi-Channel Dispatch** | Webhook (`POST /webhook/healthcare-new-job`) | [`workflows/new-job-webhook-dispatch.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/new-job-webhook-dispatch.json) | Broadcasts newly published jobs to Discord/Slack channels and email subscriber lists. |
-| **Candidate Application & ATS** | Webhook (`POST /webhook/candidate-application`) | [`workflows/application-resume-parser.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/application-resume-parser.json) | Ingests candidate applications, extracts clinical credentials, notifies recruiters, and dispatches confirmation receipts. |
-| **Daily Job Alert Digest** | Cron Schedule (`0 8 * * *`) | [`workflows/job-alert-digest.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/job-alert-digest.json) | Fetches the latest 5 healthcare opportunities from the API at 8:00 AM daily and compiles an executive digest. |
+Production-grade workflow automation for candidate screening, clinical credential parsing, multi-channel job dispatch, scheduled digests, and system-wide self-healing alerts.
 
 ---
 
-## 🛠️ Quick Start with Docker
+## ⚡ Hardened Workflow Architecture
 
-To spin up the n8n automation engine locally:
+| Workflow | Trigger Type | Spec File | Reliability & Hardening Features |
+| :--- | :--- | :--- | :--- |
+| **New Job Dispatcher** | `POST /webhook/healthcare-new-job` | [`workflows/new-job-webhook-dispatch.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/new-job-webhook-dispatch.json) | Payload sanitization, 3x HTTP retries, `continueOnFail`, 200/400 validation responses, Discord + Email broadcast. |
+| **Candidate Application & ATS** | `POST /webhook/candidate-application` | [`workflows/application-resume-parser.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/application-resume-parser.json) | Heuristic fallback when Python service is offline, candidate receipt confirmation, Discord alert, 200 OK status. |
+| **Daily Job Alert Digest** | Cron (`0 8 * * *`) | [`workflows/job-alert-digest.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/job-alert-digest.json) | Dynamic backend URL fallback, zero-jobs guard, 3x HTTP retry on API pull, Discord broadcast. |
+| **Python Strict Sync** | Cron (`0 */6 * * *`) | [`workflows/python-himalayas-sync.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/python-himalayas-sync.json) | Scrapes & filters healthcare positions, 3x retry on sync & cache flush webhook. |
+| **Global Error Alert Handler** | `n8n-nodes-base.errorTrigger` | [`workflows/system-error-handler.json`](file:///c:/Users/HP/Job-Portal/n8n/workflows/system-error-handler.json) | Automatically captures any execution failure across workflows and dispatches diagnostic alerts. |
 
+---
+
+## 🚀 Running n8n Locally
+
+You can run n8n either via Docker or directly using Node/npx:
+
+### Option A: Via Docker Compose (Recommended for isolated containers)
 ```bash
-# Start n8n in detached mode
 docker compose up -d n8n
 ```
 
-- Open the n8n Web Console at: [http://localhost:5678](http://localhost:5678)
-- Complete the initial setup (create admin owner account).
+### Option B: Via Direct npx (Recommended for fast local testing)
+```bash
+npm run dev:n8n
+```
+The console will be accessible at: **`http://localhost:5678`**
 
 ---
 
-## 📥 Importing Workflows
+## 🔍 Diagnostics & Health Verification
 
-1. In the n8n UI, navigate to **Workflows**.
-2. Click the top-right **"..."** (More options) menu -> **"Import from File"**.
-3. Select any of the files in `n8n/workflows/`.
-4. Click **"Save"** and toggle the workflow to **"Active"**.
+Run our built-in diagnostics utility to validate workflow schemas, check n8n server connectivity, and test webhook responsiveness:
+
+```bash
+npm run n8n:diagnose
+```
 
 ---
 
-## 🔗 Testing Webhooks Locally
+## ⚙️ Why Webhooks Return 404 & How to Fix It
 
-You can test the webhook endpoints directly using `curl` or Postman:
+If calling `http://localhost:5678/webhook/healthcare-new-job` returns:
+```json
+{ "code": 404, "message": "The requested webhook \"POST healthcare-new-job\" is not registered." }
+```
+
+### Explanation:
+n8n distinguishes between **Test Mode** and **Active Production Mode**:
+1. **In Test Mode (in the n8n UI canvas):**
+   - Click "Test step" or "Execute workflow".
+   - In this mode, n8n listens exclusively at `/webhook-test/...` (e.g. `http://localhost:5678/webhook-test/healthcare-new-job`).
+2. **In Production Mode:**
+   - In the top-right corner of the workflow editor, toggle the switch from **Inactive** to **Active**.
+   - Click **Save**.
+   - n8n now permanently listens at `/webhook/healthcare-new-job`.
+
+> [!TIP]
+> **AdonisJS Backend Resilience:**
+> The `N8nDispatcherService` in our backend automatically handles this! If `/webhook/...` returns 404, it immediately attempts `/webhook-test/...` so you can test workflows in the canvas without toggling them active!
+
+---
+
+## 🧪 Quick Webhook Testing via curl
 
 ### 1. Test New Job Webhook
 ```bash
@@ -45,14 +74,14 @@ curl -X POST http://localhost:5678/webhook/healthcare-new-job \
   -H "Content-Type: application/json" \
   -d '{
     "event": "job.created",
-    "timestamp": "2026-10-04T10:00:00Z",
     "job": {
-      "guid": "test-guid-123",
-      "title": "Telehealth Psychiatric Nurse Practitioner (PMHNP)",
-      "companyName": "CareHealth Telemedicine",
+      "guid": "test-rn-101",
+      "title": "Clinical Nurse Specialist (ICU)",
+      "companyName": "Mercy Health Hospital",
       "category": "Nursing",
-      "workplaceType": "Remote",
-      "salaryString": "$135,000 - $160,000 / year",
+      "workplaceType": "On-site",
+      "location": "Boston, MA",
+      "salaryString": "$125,000 - $145,000 / year",
       "applicationUrl": "http://localhost:5174"
     }
   }'
@@ -64,13 +93,15 @@ curl -X POST http://localhost:5678/webhook/candidate-application \
   -H "Content-Type: application/json" \
   -d '{
     "event": "application.submitted",
-    "jobTitle": "Telehealth Psychiatric Nurse Practitioner",
-    "companyName": "CareHealth Telemedicine",
+    "jobTitle": "Clinical Nurse Specialist (ICU)",
+    "companyName": "Mercy Health Hospital",
     "application": {
-      "candidateName": "Sarah Jenkins, RN",
-      "candidateEmail": "sarah.jenkins@example.com",
-      "clinicalLicenseNumber": "RN-CA-994821",
-      "resumeUrl": "https://linkedin.com/in/sarahjenkins"
+      "candidateName": "David Chen, RN, BSN",
+      "candidateEmail": "david.chen@example.com",
+      "clinicalLicenseNumber": "MA-RN-883921",
+      "licensedState": "MA",
+      "yearsOfExperience": 6,
+      "resumeUrl": "https://linkedin.com/in/davidchen-rn"
     }
   }'
 ```
