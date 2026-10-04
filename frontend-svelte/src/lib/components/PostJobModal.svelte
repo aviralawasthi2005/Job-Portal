@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { X, PlusCircle, CheckCircle, Sparkles, Building2 } from 'lucide-svelte';
+  import { X, PlusCircle, Sparkles, Building2, ShieldCheck, DollarSign } from 'lucide-svelte';
   import { ApiService } from '../api';
 
   const dispatch = createEventDispatcher();
@@ -21,12 +21,12 @@
 
   const categories = [
     'Nursing',
-    'Telehealth & Digital Health',
+    'Clinical Research & Life Sciences',
     'Physicians & Surgeons',
-    'Health Informatics & IT',
-    'Pharmacy',
+    'Telehealth & Digital Health',
+    'Health Informatics & Medical Coding',
+    'Pharmacy & Pharmacology',
     'Mental & Behavioral Health',
-    'Clinical Research',
     'Allied Health'
   ];
 
@@ -72,25 +72,23 @@
   }
 </script>
 
-<div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+<div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+  <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col animate-fade-in">
     <!-- Header -->
-    <div class="p-6 bg-gradient-to-r from-brand-600 via-clinical-600 to-emerald-600 text-white flex items-start justify-between">
+    <div class="p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-teal-700 text-white flex items-start justify-between">
       <div>
-        <div class="flex items-center space-x-2">
-          <span class="text-xs uppercase tracking-wider text-brand-100 font-bold">Employer Portal</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white flex items-center space-x-1">
-            <Sparkles class="w-3 h-3 text-amber-300" />
-            <span>n8n Auto-Broadcast</span>
-          </span>
+        <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold">
+          <Sparkles class="w-3.5 h-3.5 text-amber-300" />
+          <span>Employer Portal • Automated n8n Broadcast</span>
         </div>
-        <h2 class="text-xl font-bold mt-1">Post a Healthcare Opportunity</h2>
-        <p class="text-xs text-brand-100 mt-0.5">Reach thousands of active nurses, doctors, and health-tech professionals.</p>
+        <h2 class="text-xl font-bold mt-1.5">Post a Healthcare Opportunity</h2>
+        <p class="text-xs text-blue-100 mt-0.5">Reach verified nurses, physicians, and digital health specialists.</p>
       </div>
       <button
         type="button"
         on:click={close}
         class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+        aria-label="Close modal"
       >
         <X class="w-4 h-4" />
       </button>
@@ -99,40 +97,43 @@
     <!-- Body -->
     <form on:submit|preventDefault={handleSubmit} class="p-6 overflow-y-auto space-y-4 text-sm text-slate-800">
       {#if errorMessage}
-        <div class="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
+        <div class="p-3.5 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
           {errorMessage}
         </div>
       {/if}
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Job Title *</label>
+          <label for="post-title" class="block text-xs font-bold text-slate-600 mb-1">Job Title *</label>
           <input
+            id="post-title"
             type="text"
             required
             bind:value={title}
             placeholder="e.g. Telehealth Nurse Practitioner (FNP)"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Healthcare Organization *</label>
+          <label for="post-company" class="block text-xs font-bold text-slate-600 mb-1">Healthcare Organization *</label>
           <input
+            id="post-company"
             type="text"
             required
             bind:value={companyName}
             placeholder="e.g. Mercy Virtual Care Clinic"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           />
         </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Specialty *</label>
+          <label for="post-category" class="block text-xs font-bold text-slate-600 mb-1">Specialty *</label>
           <select
+            id="post-category"
             bind:value={category}
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           >
             {#each categories as cat}
               <option value={cat}>{cat}</option>
@@ -140,10 +141,11 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Workplace Mode</label>
+          <label for="post-workplace" class="block text-xs font-bold text-slate-600 mb-1">Workplace Mode</label>
           <select
+            id="post-workplace"
             bind:value={workplaceType}
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           >
             <option value="Remote">Remote</option>
             <option value="Hybrid">Hybrid</option>
@@ -151,10 +153,11 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Employment Type</label>
+          <label for="post-type" class="block text-xs font-bold text-slate-600 mb-1">Employment Type</label>
           <select
+            id="post-type"
             bind:value={type}
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           >
             <option value="Full-time">Full-time</option>
             <option value="Part-time">Part-time</option>
@@ -166,70 +169,75 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Location</label>
+          <label for="post-location" class="block text-xs font-bold text-slate-600 mb-1">Location</label>
           <input
+            id="post-location"
             type="text"
             bind:value={location}
             placeholder="e.g. Remote (US) or Austin, TX"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Min Salary ($/yr)</label>
+          <label for="post-min-sal" class="block text-xs font-bold text-slate-600 mb-1">Min Salary ($/yr)</label>
           <input
+            id="post-min-sal"
             type="number"
             step="1000"
             bind:value={salaryMin}
-            placeholder="90000"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            placeholder="110000"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Max Salary ($/yr)</label>
+          <label for="post-max-sal" class="block text-xs font-bold text-slate-600 mb-1">Max Salary ($/yr)</label>
           <input
+            id="post-max-sal"
             type="number"
             step="1000"
             bind:value={salaryMax}
-            placeholder="130000"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            placeholder="145000"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
           />
         </div>
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Application URL or Email *</label>
+        <label for="post-apply-url" class="block text-xs font-bold text-slate-600 mb-1">Application URL or Email *</label>
         <input
+          id="post-apply-url"
           type="text"
           required
           bind:value={applicationEmailOrUrl}
           placeholder="https://company.com/apply or jobs@hospital.org"
-          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
         />
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Detailed Description *</label>
+        <label for="post-desc" class="block text-xs font-bold text-slate-600 mb-1">Detailed Description *</label>
         <textarea
+          id="post-desc"
           rows="4"
           required
           bind:value={description}
-          placeholder="Provide responsibilities, clinical team structure, patient caseload, and shift details..."
-          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
+          placeholder="Provide clinical responsibilities, licensure requirements, patient caseload, and shift details..."
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none font-medium"
         ></textarea>
       </div>
 
-      <div class="pt-2 flex items-center justify-end space-x-3">
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
         <button
           type="button"
           on:click={close}
-          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-clinical-600 hover:from-brand-500 hover:to-clinical-500 shadow-md transition-all cursor-pointer disabled:opacity-50"
+          class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-98"
         >
           {#if isSubmitting}
             <span>Publishing...</span>

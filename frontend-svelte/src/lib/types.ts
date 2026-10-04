@@ -31,6 +31,7 @@ export interface Job {
   requirements?: string[];
   benefits?: string[];
   skills?: string[];
+  credentials?: string[];
   applicationUrl?: string;
   source: 'himalayas' | 'manual' | 'n8n_sync';
   publishedAt: string;
@@ -40,6 +41,7 @@ export interface Job {
 
 export interface JobFilterParams {
   search?: string;
+  location?: string;
   category?: string;
   workplaceType?: string;
   type?: string;
@@ -76,4 +78,15 @@ export interface CandidateApplication {
   resumeUrl?: string;
   clinicalLicenseNumber?: string;
   yearsOfExperience?: number;
+}
+
+export interface TrackedApplication {
+  id: string;
+  jobGuid: string;
+  jobTitle: string;
+  companyName: string;
+  location: string;
+  clinicalLicense?: string;
+  status: 'applied' | 'under_review' | 'shortlisted' | 'interview' | 'offer';
+  appliedAt: string;
 }
