@@ -50,15 +50,16 @@
     },
     {
       "parameters": {
-        "requestMethod": "POST",
+        "method": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
-        "jsonParameters": true,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"🩺 **New Healthcare Job Posted to PulseCareers!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.notificationTitle }}\",\n      \"url\": \"{{ $json.applicationUrl }}\",\n      \"color\": 2267807,\n      \"fields\": [\n        {\n          \"name\": \"Specialty\",\n          \"value\": \"{{ $json.category }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Workplace\",\n          \"value\": \"{{ $json.workplaceType }} ({{ $json.location }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Compensation\",\n          \"value\": \"{{ $json.salaryString }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Healthcare Job Portal Automation • Verified ATS\"\n      }\n    }\n  ]\n}",
         "options": {
           "retryOnFail": true,
           "maxTries": 3,
           "waitBetweenTries": 2000
-        },
-        "bodyParametersJson": "={\n  \"content\": \"🩺 **New Healthcare Job Posted to PulseCareers!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.notificationTitle }}\",\n      \"url\": \"{{ $json.applicationUrl }}\",\n      \"color\": 2267807,\n      \"fields\": [\n        {\n          \"name\": \"Specialty\",\n          \"value\": \"{{ $json.category }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Workplace\",\n          \"value\": \"{{ $json.workplaceType }} ({{ $json.location }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Compensation\",\n          \"value\": \"{{ $json.salaryString }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Healthcare Job Portal Automation • Verified ATS\"\n      }\n    }\n  ]\n}"
+        }
       },
       "name": "Dispatch to Discord / Webhook",
       "type": "n8n-nodes-base.httpRequest",

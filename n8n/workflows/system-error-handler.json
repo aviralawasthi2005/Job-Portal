@@ -25,15 +25,16 @@
     },
     {
       "parameters": {
-        "requestMethod": "POST",
+        "method": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
-        "jsonParameters": true,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json.alertMarkdown) }}\n}",
         "options": {
           "retryOnFail": true,
           "maxTries": 2,
           "waitBetweenTries": 1000
-        },
-        "bodyParametersJson": "={\n  \"content\": {{ JSON.stringify($json.alertMarkdown) }}\n}"
+        }
       },
       "name": "Dispatch Error Alert",
       "type": "n8n-nodes-base.httpRequest",

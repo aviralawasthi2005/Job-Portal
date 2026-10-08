@@ -81,15 +81,16 @@
     },
     {
       "parameters": {
-        "requestMethod": "POST",
+        "method": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
-        "jsonParameters": true,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"📄 **New Candidate Application Received**\",\n  \"embeds\": [\n    {\n      \"title\": \"Candidate: {{ $json.candidateName }}\",\n      \"description\": \"Applied for: **{{ $json.targetJob }}**\",\n      \"color\": 3066993,\n      \"fields\": [\n        {\n          \"name\": \"License / State\",\n          \"value\": \"{{ $json.licenseNumber }} ({{ $json.licensedState }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Score\",\n          \"value\": \"{{ $json.qualificationScore }}/100\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Status\",\n          \"value\": \"{{ $json.recommendation }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers ATS Integration • Mode: {{ $json.atsStatus }}\"\n      }\n    }\n  ]\n}",
         "options": {
           "retryOnFail": true,
           "maxTries": 2,
           "waitBetweenTries": 1500
-        },
-        "bodyParametersJson": "={\n  \"content\": \"📄 **New Candidate Application Received**\",\n  \"embeds\": [\n    {\n      \"title\": \"Candidate: {{ $json.candidateName }}\",\n      \"description\": \"Applied for: **{{ $json.targetJob }}**\",\n      \"color\": 3066993,\n      \"fields\": [\n        {\n          \"name\": \"License / State\",\n          \"value\": \"{{ $json.licenseNumber }} ({{ $json.licensedState }})\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Score\",\n          \"value\": \"{{ $json.qualificationScore }}/100\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Status\",\n          \"value\": \"{{ $json.recommendation }}\",\n          \"inline\": true\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers ATS Integration • Mode: {{ $json.atsStatus }}\"\n      }\n    }\n  ]\n}"
+        }
       },
       "name": "Notify Recruitment Team",
       "type": "n8n-nodes-base.httpRequest",

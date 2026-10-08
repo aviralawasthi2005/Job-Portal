@@ -1,0 +1,129 @@
+{
+  "name": "Healthcare Job Portal - User Signup & Welcome Onboarding",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "user-signup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "User Signup Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "user-signup-onboarding-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize incoming signup payload\nconst raw = $input.first().json;\nconst body = raw.body || raw;\nconst user = body.user || body;\n\nconst id = user.id || `usr-${Date.now()}`;\nconst name = (user.name || 'Healthcare Colleague').trim();\nconst email = (user.email || '').trim().toLowerCase();\nconst role = (user.role || 'candidate').toLowerCase();\nconst specialty = (user.specialty || 'General Healthcare').trim();\nconst clinicalLicenseNumber = (user.clinicalLicenseNumber || '').trim();\nconst organization = (user.organization || 'Independent Provider').trim();\n\nconst isCandidate = role === 'candidate';\nconst roleLabel = isCandidate ? 'Healthcare Clinician / Candidate' : 'Healthcare Facility / Employer';\n\nconst welcomeTitle = isCandidate\n  ? `Welcome to PulseCareers, ${name}! Your clinical profile is ready.`\n  : `Welcome to PulseCareers, ${organization}! Your employer hiring dashboard is active.`;\n\nreturn [{\n  json: {\n    id,\n    name,\n    email,\n    role,\n    roleLabel,\n    specialty,\n    clinicalLicenseNumber: clinicalLicenseNumber || 'N/A',\n    organization,\n    isCandidate,\n    welcomeTitle,\n    registeredAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Normalize User Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"👋 **New PulseCareers Member Registered!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.welcomeTitle }}\",\n      \"color\": 3447003,\n      \"fields\": [\n        {\n          \"name\": \"Name\",\n          \"value\": \"{{ $json.name }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Role\",\n          \"value\": \"{{ $json.roleLabel }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Email\",\n          \"value\": \"{{ $json.email }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"Details\",\n          \"value\": \"{{ $json.isCandidate ? ('License: ' + $json.clinicalLicenseNumber + ' | Specialty: ' + $json.specialty) : ('Organization: ' + $json.organization) }}\",\n          \"inline\": false\n        }\n      ],\n      \"footer\": {\n        \"text\": \"PulseCareers Automation • User Onboarding Pipeline\"\n      }\n    }\n  ]\n}",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 2,
+          "waitBetweenTries": 1500
+        }
+      },
+      "name": "Broadcast Registration Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        680,
+        220
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "welcome@pulsehealthjobs.org",
+        "toEmail": "={{ $json.email }}",
+        "subject": "=Welcome to PulseCareers - {{ $json.name }}",
+        "text": "=Hello {{ $json.name }},\n\nThank you for creating your account on PulseCareers, the dedicated clinical and health-tech job marketplace.\n\nYour account role: {{ $json.roleLabel }}\n{{ $json.isCandidate ? ('Clinical Specialty: ' + $json.specialty) : ('Organization: ' + $json.organization) }}\n\nYou can now browse verified opportunities, save jobs, track applications, and connect with premier healthcare employers.\n\nBest regards,\nPulseCareers Onboarding Team"
+      },
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"status\": \"onboarding_initiated\",\n  \"userId\": \"{{ $json.id }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"role\": \"{{ $json.role }}\",\n  \"registeredAt\": \"{{ $json.registeredAt }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        920,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "User Signup Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize User Profile": {
+      "main": [
+        [
+          {
+            "node": "Broadcast Registration Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

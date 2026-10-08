@@ -36,6 +36,19 @@
       "position": [
         460,
         300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first()?.json || {};\nconst success = input.success === true;\nconst syncedJobs = input.totalValidHealthcareJobs || 0;\nconst totalFetched = input.totalFetchedFromHimalayas || 0;\n\nreturn [{\n  json: {\n    status: success ? 'SUCCESS' : 'FALLBACK',\n    syncedJobs,\n    totalFetched,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Process Sync Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
       ]
     },
     {
@@ -44,7 +57,7 @@
         "url": "={{ $env.BACKEND_API_URL || 'http://localhost:3333' }}/api/v1/n8n/webhook-receive",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"event\": \"cache.flush\",\n  \"data\": {\n    \"syncedJobs\": {{ $json.totalValidHealthcareJobs || 0 }},\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n  }\n}",
+        "jsonBody": "={\n  \"event\": \"cache.flush\",\n  \"data\": {\n    \"syncedJobs\": {{ $json.syncedJobs || 0 }},\n    \"status\": \"{{ $json.status }}\",\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }\n}",
         "options": {
           "retryOnFail": true,
           "maxTries": 3,
@@ -55,7 +68,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        720,
+        900,
         300
       ],
       "continueOnFail": true
@@ -74,6 +87,17 @@
       ]
     },
     "Scrape & Filter Strictly with Python": {
+      "main": [
+        [
+          {
+            "node": "Process Sync Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Sync Result": {
       "main": [
         [
           {

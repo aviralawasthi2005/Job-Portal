@@ -52,15 +52,16 @@
     },
     {
       "parameters": {
-        "requestMethod": "POST",
+        "method": "POST",
         "url": "={{ $env.DISCORD_WEBHOOK_URL || 'https://httpbin.org/post' }}",
-        "jsonParameters": true,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json.digestMessage) }}\n}",
         "options": {
           "retryOnFail": true,
           "maxTries": 3,
           "waitBetweenTries": 2000
-        },
-        "bodyParametersJson": "={\n  \"content\": {{ JSON.stringify($json.digestMessage) }}\n}"
+        }
       },
       "name": "Broadcast to Discord / Community",
       "type": "n8n-nodes-base.httpRequest",

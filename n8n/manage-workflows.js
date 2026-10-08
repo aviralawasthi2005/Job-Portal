@@ -180,6 +180,21 @@ async function run() {
       },
       'Candidate Application Webhook'
     );
+
+    await testWebhook(
+      '/webhook/user-signup',
+      {
+        event: 'user.signup',
+        user: {
+          name: 'Dr. Jane Watson',
+          email: 'jane.watson@example.com',
+          role: 'candidate',
+          specialty: 'Nursing',
+          clinicalLicenseNumber: 'RN-882910'
+        }
+      },
+      'User Signup & Onboarding Webhook'
+    );
   }
 
   console.log('\n====================================================');
