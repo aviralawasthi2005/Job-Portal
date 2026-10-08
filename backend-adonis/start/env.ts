@@ -10,6 +10,7 @@ export const Env = {
   // n8n Webhook Endpoints
   N8N_WEBHOOK_NEW_JOB: process.env.N8N_WEBHOOK_NEW_JOB || 'http://localhost:5678/webhook/healthcare-new-job',
   N8N_WEBHOOK_APPLICATION: process.env.N8N_WEBHOOK_APPLICATION || 'http://localhost:5678/webhook/candidate-application',
+  N8N_WEBHOOK_SIGNUP: process.env.N8N_WEBHOOK_SIGNUP || 'http://localhost:5678/webhook/user-signup',
   N8N_WEBHOOK_SECRET: process.env.N8N_WEBHOOK_SECRET || 'super_secret_healthcare_token_2026',
   
   // Himalayas API
