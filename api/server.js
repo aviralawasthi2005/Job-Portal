@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import jobRoutes from '../backend/src/routes/jobRoutes.js';
+import authRoutes from '../backend/src/routes/authRoutes.js';
+import webhookRoutes from '../backend/src/routes/webhookRoutes.js';
 
 // Load environment variables (Vercel injects these automatically in production)
 dotenv.config();
@@ -25,6 +27,11 @@ app.use((req, res, next) => {
 
 // Healthcare Job Portal Routes
 app.use('/api/jobs', jobRoutes);
+app.use('/api/v1/jobs', jobRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/n8n', webhookRoutes);
+app.use('/api/v1/n8n', webhookRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

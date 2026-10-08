@@ -76,4 +76,18 @@ export class N8nDispatcherService {
     console.log(`[n8n Dispatcher] Triggering application workflow for "${application.candidateName}"...`);
     return await this.postWithFallback(Env.N8N_WEBHOOK_APPLICATION, payload);
   }
+
+  /**
+   * Dispatch a webhook event to n8n when a user signs up
+   */
+  public static async dispatchUserSignup(user: any): Promise<boolean> {
+    const payload = {
+      event: 'user.signup',
+      timestamp: new Date().toISOString(),
+      user
+    };
+
+    console.log(`[n8n Dispatcher] Triggering signup onboarding workflow for "${user.name}" (${user.role})...`);
+    return await this.postWithFallback(Env.N8N_WEBHOOK_SIGNUP, payload);
+  }
 }

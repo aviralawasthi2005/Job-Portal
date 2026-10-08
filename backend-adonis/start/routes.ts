@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { JobsController } from '../app/controllers/jobs_controller.js';
 import { ApplicationsController } from '../app/controllers/applications_controller.js';
 import { N8nWebhooksController } from '../app/controllers/n8n_webhooks_controller.js';
+import { AuthController } from '../app/controllers/auth_controller.js';
 import { HimalayasService } from '../app/services/himalayas_service.js';
 
 export const router = Router();
@@ -15,6 +16,16 @@ router.get('/health', (_req, res) => {
     engine: 'AdonisJS v6 Core + TypeScript'
   });
 });
+
+// Authentication Endpoints
+router.post('/api/v1/auth/signup', AuthController.signup);
+router.post('/api/v1/auth/login', AuthController.login);
+router.get('/api/v1/auth/me', AuthController.me);
+router.post('/api/v1/auth/logout', AuthController.logout);
+router.post('/api/auth/signup', AuthController.signup);
+router.post('/api/auth/login', AuthController.login);
+router.get('/api/auth/me', AuthController.me);
+router.post('/api/auth/logout', AuthController.logout);
 
 // Job Endpoints
 router.get('/api/v1/jobs', JobsController.index);
