@@ -85,6 +85,7 @@ export interface AuthUserState {
   specialty?: string;
   organization?: string;
   title?: string;
+  phone?: string;
   createdAt: string;
 }
 

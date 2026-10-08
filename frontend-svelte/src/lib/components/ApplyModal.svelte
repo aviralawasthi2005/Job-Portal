@@ -2,16 +2,16 @@
   import { createEventDispatcher } from 'svelte';
   import { X, Send, Award, FileText, CheckCircle, ShieldCheck, Sparkles } from 'lucide-svelte';
   import { ApiService } from '../api';
-  import { addTrackedApplication } from '../stores';
+  import { addTrackedApplication, currentUser } from '../stores';
   import type { Job, CandidateApplication } from '../types';
 
   export let job: Job;
   const dispatch = createEventDispatcher();
 
-  let candidateName = '';
-  let candidateEmail = '';
-  let candidatePhone = '';
-  let clinicalLicenseNumber = '';
+  let candidateName = $currentUser?.name || '';
+  let candidateEmail = $currentUser?.email || '';
+  let candidatePhone = $currentUser?.phone || '';
+  let clinicalLicenseNumber = $currentUser?.clinicalLicenseNumber || '';
   let yearsOfExperience: number = 3;
   let resumeUrl = '';
   let coverLetter = '';

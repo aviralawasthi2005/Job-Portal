@@ -11,6 +11,7 @@
   import ApplyModal from './lib/components/ApplyModal.svelte';
   import CandidateDrawer from './lib/components/CandidateDrawer.svelte';
   import PostJobModal from './lib/components/PostJobModal.svelte';
+  import AuthModal from './lib/components/AuthModal.svelte';
   import WhyPlatform from './lib/components/WhyPlatform.svelte';
   import JobAlertsCTA from './lib/components/JobAlertsCTA.svelte';
   import Footer from './lib/components/Footer.svelte';
@@ -41,6 +42,22 @@
   let isCandidateDrawerOpen = false;
   let candidateDrawerTab: 'saved' | 'applications' = 'saved';
   let isPostJobModalOpen = false;
+
+  // Auth Modal state
+  let isAuthModalOpen = false;
+  let authModalMode: 'login' | 'signup' = 'login';
+  let authModalRole: 'candidate' | 'employer' = 'candidate';
+
+  function handleOpenLogin() {
+    authModalMode = 'login';
+    isAuthModalOpen = true;
+  }
+
+  function handleOpenSignup(role: 'candidate' | 'employer' = 'candidate') {
+    authModalMode = 'signup';
+    authModalRole = role;
+    isAuthModalOpen = true;
+  }
 
   // Toast
   let toastMessage = '';
@@ -164,6 +181,9 @@
     on:openSavedJobs={openSavedJobs}
     on:openApplications={openApplications}
     on:openPostJob={() => (isPostJobModalOpen = true)}
+    on:openLogin={handleOpenLogin}
+    on:openSignup={() => handleOpenSignup('candidate')}
+    on:logout={() => showToast('Signed out of PulseCareers.', 'success')}
   />
 
   <!-- Hero Section with Dual Search -->
@@ -414,6 +434,17 @@
       }}
     />
   {/if}
+
+  <!-- Authentication Modal (Login / Sign Up) -->
+  <AuthModal
+    isOpen={isAuthModalOpen}
+    initialMode={authModalMode}
+    initialRole={authModalRole}
+    on:close={() => (isAuthModalOpen = false)}
+    on:authSuccess={(e) => {
+      showToast(e.detail.message, 'success');
+    }}
+  />
 
   <!-- Toast Notification -->
   <Toast

@@ -2,11 +2,12 @@
   import { createEventDispatcher } from 'svelte';
   import { X, PlusCircle, Sparkles, Building2, ShieldCheck, DollarSign } from 'lucide-svelte';
   import { ApiService } from '../api';
+  import { currentUser } from '../stores';
 
   const dispatch = createEventDispatcher();
 
   let title = '';
-  let companyName = '';
+  let companyName = $currentUser?.organization || '';
   let category = 'Nursing';
   let workplaceType: 'Remote' | 'On-site' | 'Hybrid' = 'Remote';
   let type = 'Full-time';
@@ -15,7 +16,7 @@
   let salaryMax: number | undefined = 145000;
   let description = '';
   let applicationEmailOrUrl = '';
-  let contactEmail = '';
+  let contactEmail = $currentUser?.email || '';
   let isSubmitting = false;
   let errorMessage = '';
 
