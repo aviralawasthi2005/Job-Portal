@@ -146,13 +146,17 @@
     aria-modal="true"
     aria-labelledby="auth-modal-title"
   >
-    <!-- Backdrop Click -->
-    <div class="fixed inset-0" on:click={closeModal} aria-hidden="true"></div>
+    <!-- Accessible Backdrop Click -->
+    <button
+      type="button"
+      class="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default"
+      on:click={closeModal}
+      aria-label="Close modal backdrop"
+    ></button>
 
     <!-- Modal Card -->
     <div
       class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 z-10 animate-scale-up"
-      on:click|stopPropagation
     >
       <!-- Modal Header Banner -->
       <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-teal-700 px-6 py-6 text-white relative">
@@ -237,9 +241,9 @@
         <!-- Role Selection for Signup -->
         {#if mode === 'signup'}
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
               Select Your Role
-            </label>
+            </span>
             <div class="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -326,14 +330,25 @@
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
               <Lock class="w-4 h-4" />
             </div>
-            <input
-              id="auth-password"
-              type={showPassword ? 'text' : 'password'}
-              bind:value={password}
-              required
-              placeholder="••••••••"
-              class="w-full pl-9 pr-10 py-2.2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-            />
+            {#if showPassword}
+              <input
+                id="auth-password"
+                type="text"
+                bind:value={password}
+                required
+                placeholder="••••••••"
+                class="w-full pl-9 pr-10 py-2.2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+              />
+            {:else}
+              <input
+                id="auth-password"
+                type="password"
+                bind:value={password}
+                required
+                placeholder="••••••••"
+                class="w-full pl-9 pr-10 py-2.2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+              />
+            {/if}
             <button
               type="button"
               on:click={() => (showPassword = !showPassword)}
