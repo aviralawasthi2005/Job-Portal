@@ -1,0 +1,47 @@
+[
+  {
+    "id": "usr-clinician-01",
+    "name": "Dr. Sarah Jenkins, MD",
+    "email": "doctor@pulsehealth.org",
+    "passwordHash": "edb703bc88d0d149b4423c49e7ee2ab7045c01ef4b3cd83e0cbf420dfcdf5fde",
+    "role": "candidate",
+    "specialty": "Physicians & Surgeons",
+    "clinicalLicenseNumber": "MD-883921-CA",
+    "title": "Board-Certified Internist",
+    "bio": "12+ years experience in acute care and remote patient monitoring.",
+    "createdAt": "2026-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "usr-clinician-02",
+    "name": "Elena Rostova, BSN, RN",
+    "email": "nurse@pulsehealth.org",
+    "passwordHash": "edb703bc88d0d149b4423c49e7ee2ab7045c01ef4b3cd83e0cbf420dfcdf5fde",
+    "role": "candidate",
+    "specialty": "Nursing",
+    "clinicalLicenseNumber": "RN-994821-NY",
+    "title": "Critical Care & Telehealth Nurse",
+    "bio": "Specializing in cardiac ICU, triage, and remote telehealth consultations.",
+    "createdAt": "2026-02-10T00:00:00.000Z"
+  },
+  {
+    "id": "usr-employer-01",
+    "name": "Marcus Vance",
+    "email": "recruiter@carehealth.com",
+    "passwordHash": "edb703bc88d0d149b4423c49e7ee2ab7045c01ef4b3cd83e0cbf420dfcdf5fde",
+    "role": "employer",
+    "organization": "CareHealth Telemedicine Network",
+    "title": "Director of Clinical Talent Acquisition",
+    "bio": "Hiring verified clinicians and telehealth providers across North America.",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "usr-1791474078056-0254e6",
+    "name": "Nurse Joy",
+    "email": "joy@hospital.org",
+    "passwordHash": "2dfed7942f7f1e4fd331017b481a7a7ef00629ba438d01049351c855a77e2592",
+    "role": "candidate",
+    "specialty": "Nursing",
+    "clinicalLicenseNumber": "RN-776655",
+    "createdAt": "2026-10-08T15:41:18.171Z"
+  }
+]
