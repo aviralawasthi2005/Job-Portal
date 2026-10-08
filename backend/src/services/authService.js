@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,11 +125,21 @@ class AuthService {
     };
 
     try {
-      await axios.post(webhookUrl, payload, { timeout: 2000 });
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(2500)
+      });
       console.log(`[AuthService] n8n user-signup webhook delivered: ${webhookUrl}`);
     } catch {
       try {
-        await axios.post(testUrl, payload, { timeout: 2000 });
+        await fetch(testUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(2500)
+        });
         console.log(`[AuthService] n8n test webhook delivered: ${testUrl}`);
       } catch {
         // Safe to ignore if n8n is offline

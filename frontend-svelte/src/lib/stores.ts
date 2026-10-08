@@ -74,3 +74,74 @@ export function addTrackedApplication(app: Omit<TrackedApplication, 'id' | 'appl
   };
   trackedApplications.update((list) => [newApp, ...list]);
 }
+
+// 3. User Authentication Store
+export interface AuthUserState {
+  id: string;
+  name: string;
+  email: string;
+  role: 'candidate' | 'employer' | 'admin';
+  clinicalLicenseNumber?: string;
+  specialty?: string;
+  organization?: string;
+  title?: string;
+  createdAt: string;
+}
+
+const initialUser = loadFromStorage<AuthUserState | null>('pulse_current_user', null);
+const initialToken = loadFromStorage<string | null>('pulse_auth_token', null);
+
+export const currentUser = writable<AuthUserState | null>(initialUser);
+export const authToken = writable<string | null>(initialToken);
+
+currentUser.subscribe((user) => {
+  saveToStorage('pulse_current_user', user);
+});
+
+authToken.subscribe((token) => {
+  saveToStorage('pulse_auth_token', token);
+});
+
+export function setAuthenticatedUser(user: AuthUserState, token: string): void {
+  currentUser.set(user);
+  authToken.set(token);
+}
+
+export function logoutUser(): void {
+  currentUser.set(null);
+  authToken.set(null);
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('pulse_current_user');
+    localStorage.removeItem('pulse_auth_token');
+  }
+}
+
+export function quickDemoLogin(role: 'clinician' | 'employer'): AuthUserState {
+  let demoUser: AuthUserState;
+  if (role === 'clinician') {
+    demoUser = {
+      id: 'usr-clinician-demo',
+      name: 'Dr. Sarah Jenkins, MD',
+      email: 'doctor@pulsehealth.org',
+      role: 'candidate',
+      specialty: 'Physicians & Surgeons',
+      clinicalLicenseNumber: 'MD-883921-CA',
+      title: 'Board-Certified Internist',
+      createdAt: new Date().toISOString()
+    };
+  } else {
+    demoUser = {
+      id: 'usr-employer-demo',
+      name: 'Marcus Vance',
+      email: 'recruiter@carehealth.com',
+      role: 'employer',
+      organization: 'CareHealth Telemedicine Network',
+      title: 'Director of Clinical Talent Acquisition',
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  const demoToken = `pulse_demo_tk_${Date.now()}`;
+  setAuthenticatedUser(demoUser, demoToken);
+  return demoUser;
+}
