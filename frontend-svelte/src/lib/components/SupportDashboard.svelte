@@ -4,7 +4,6 @@
     ArrowLeft,
     ArrowUpRight,
     Check,
-    CheckCircle2,
     Clock3,
     Headset,
     Inbox,
@@ -33,6 +32,12 @@
     'Other'
   ];
   const statuses: SupportTicketStatus[] = ['open', 'in_progress', 'resolved'];
+  const statusFilters: { id: 'all' | SupportTicketStatus; label: string }[] = [
+    { id: 'all', label: 'All requests' },
+    { id: 'open', label: 'Open' },
+    { id: 'in_progress', label: 'In progress' },
+    { id: 'resolved', label: 'Resolved' }
+  ];
 
   let tickets: SupportTicket[] = [];
   let activeTicket: SupportTicket | null = null;
@@ -70,6 +75,10 @@
 
   function getStatusLabel(status: SupportTicketStatus): string {
     return status === 'in_progress' ? 'In progress' : status === 'resolved' ? 'Resolved' : 'Open';
+  }
+
+  function selectStatusFilter(status: 'all' | SupportTicketStatus) {
+    statusFilter = status;
   }
 
   function formatDate(date: string): string {
@@ -155,7 +164,9 @@
     if (event.key === 'Escape') close();
   }
 
-  onMount(loadTickets);
+  onMount(() => {
+    void loadTickets();
+  });
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -221,10 +232,10 @@
           <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div class="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
-                {#each [{ id: 'all', label: 'All requests' }, { id: 'open', label: 'Open' }, { id: 'in_progress', label: 'In progress' }, { id: 'resolved', label: 'Resolved' }] as filter}
+                {#each statusFilters as filter}
                   <button
                     type="button"
-                    on:click={() => statusFilter = filter.id as 'all' | SupportTicketStatus}
+                    on:click={() => selectStatusFilter(filter.id)}
                     class="rounded-lg px-3 py-2 text-xs font-semibold transition {statusFilter === filter.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}"
                   >{filter.label}</button>
                 {/each}

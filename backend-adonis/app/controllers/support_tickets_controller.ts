@@ -1,12 +1,9 @@
 import type { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { AuthController } from './auth_controller.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 const TICKETS_FILE = path.join(DATA_DIR, 'support-tickets.json');
 
 const CATEGORIES = ['Account access', 'Applications', 'Job listings', 'Employer support', 'Other'] as const;
