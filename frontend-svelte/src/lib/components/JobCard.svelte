@@ -38,17 +38,17 @@
   }
 </script>
 
-<div class="group relative bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs hover:shadow-lg hover:border-blue-400 transition-all duration-200 flex flex-col justify-between">
+<div class="group relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-[0_18px_42px_-26px_rgba(15,23,42,0.35)] sm:p-6">
   <!-- Card Header -->
   <div>
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-start space-x-3.5">
         <!-- Logo or Initials -->
-        <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-200 transition-colors">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition-colors group-hover:border-emerald-200">
           {#if job.companyLogo}
             <img src={job.companyLogo} alt={job.companyName} class="w-full h-full object-contain p-1.5" />
           {:else}
-            <span class="text-xs font-black text-blue-700 bg-blue-50 w-full h-full flex items-center justify-center">
+            <span class="flex h-full w-full items-center justify-center bg-emerald-50 text-xs font-black text-emerald-800">
               {getInitials(job.companyName)}
             </span>
           {/if}
@@ -56,16 +56,16 @@
 
         <div>
           <div class="flex items-center space-x-1.5">
-            <span class="text-xs font-semibold text-slate-600 hover:text-blue-700 transition-colors">
+            <span class="text-xs font-semibold text-slate-600 transition-colors group-hover:text-emerald-800">
               {job.companyName}
             </span>
-            <ShieldCheck class="w-3.5 h-3.5 text-blue-600" title="Verified Employer" />
+            <ShieldCheck class="h-3.5 w-3.5 text-emerald-700" title="Verified Employer" />
           </div>
 
           <button
             type="button"
             on:click={() => dispatch('select', job)}
-            class="text-left font-bold text-slate-900 group-hover:text-blue-700 transition-colors cursor-pointer text-base sm:text-lg line-clamp-1 mt-0.5 focus:outline-none"
+            class="mt-0.5 line-clamp-2 cursor-pointer text-left text-base font-bold text-slate-900 transition-colors group-hover:text-emerald-800 focus:outline-none sm:text-lg"
           >
             {job.title}
           </button>
@@ -76,9 +76,9 @@
       <button
         type="button"
         on:click={handleBookmark}
-        class="p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer shrink-0"
+        class="shrink-0 cursor-pointer rounded-xl p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
         title={isSaved ? 'Remove from saved' : 'Save opportunity'}
-        aria-label="Save Job"
+        aria-label={isSaved ? 'Remove saved job' : 'Save job'}
       >
         <Bookmark class="w-5 h-5 {isSaved ? 'fill-blue-600 text-blue-600' : ''}" />
       </button>
@@ -142,7 +142,7 @@
     <button
       type="button"
       on:click={() => dispatch('select', job)}
-      class="text-xs font-bold text-slate-600 hover:text-blue-700 transition-colors flex items-center space-x-1 cursor-pointer"
+      class="flex cursor-pointer items-center space-x-1 text-xs font-bold text-slate-600 transition-colors hover:text-emerald-800"
     >
       <span>Full Details & Benefits</span>
     </button>
@@ -157,7 +157,7 @@
         <button
           type="button"
           on:click={() => dispatch('apply', job)}
-          class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs shadow-blue-500/20 active:scale-98 transition-all cursor-pointer"
+          class="inline-flex cursor-pointer items-center space-x-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-emerald-900/15 transition-all hover:bg-emerald-800 active:scale-[0.98]"
         >
           <Send class="w-3 h-3" />
           <span>Apply Now</span>
