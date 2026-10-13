@@ -178,6 +178,17 @@ npm run sync:healthcare
 npm run docker:up
 ```
 
+### Customer Support & Admin Dashboard
+
+Signed-in customers can open **Help** in the Svelte app to submit and track support requests. Configure the administrator account on the backend only; never use `VITE_` variables for admin credentials:
+
+```env
+ADMIN_EMAIL=support-admin@your-domain.example
+ADMIN_PASSWORD=use-a-long-unique-secret
+```
+
+The Adonis service provisions this account on startup. Sign in through the regular sign-in form to access the **Admin** dashboard. Support requests and account records are stored in `backend-adonis/data/`; Docker mounts this directory to the persistent `backenddata` volume. Back up and protect this data, and do not include patient or sensitive health information in support messages.
+
 ---
 
 ## 🤖 Python + n8n Synergy
@@ -199,6 +210,9 @@ The platform links **Python Intelligence** with **n8n Automation**:
 | `GET` | `/api/v1/jobs/:guid` | Single healthcare job details by GUID | AdonisJS (3333) |
 | `POST` | `/api/v1/jobs` | Recruiter post job (Triggers n8n) | AdonisJS (3333) |
 | `POST` | `/api/v1/applications` | Candidate submit application (Triggers n8n) | AdonisJS (3333) |
+| `GET` | `/api/v1/support/tickets` | List the signed-in user’s support requests (admins see all) | AdonisJS (3333) |
+| `POST` | `/api/v1/support/tickets` | Create a support request for the signed-in user | AdonisJS (3333) |
+| `PATCH` | `/api/v1/support/tickets/:id` | Update support status and staff reply (admin only) | AdonisJS (3333) |
 | `POST` | `/api/v1/jobs/filter` | Filters raw jobs array to 100% healthcare | Python (8000) |
 | `POST` | `/api/v1/jobs/sync` | Scrapes & filters Himalayas healthcare jobs | Python (8000) |
 | `POST` | `/api/v1/candidates/analyze-resume`| Analyzes medical credentials & state licenses | Python (8000) |

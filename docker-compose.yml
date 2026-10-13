@@ -100,6 +100,8 @@ services:
       - PORT=3333
       - HOST=0.0.0.0
       - NODE_ENV=development
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -115,6 +117,8 @@ services:
       - redis
       - n8n
       - python-service
+    volumes:
+      - backenddata:/app/backend-adonis/data
     networks:
       - healthcare-net
 
@@ -145,3 +149,4 @@ volumes:
   pgdata:
   redisdata:
   n8ndata:
+  backenddata:
