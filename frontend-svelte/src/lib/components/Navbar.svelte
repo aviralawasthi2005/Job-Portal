@@ -48,24 +48,24 @@
   }
 </script>
 
-<header class="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+<header class="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-xl">
+  <div class="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
     <!-- Brand Logo -->
     <button
       type="button"
       class="flex items-center space-x-3 text-left cursor-pointer group focus:outline-none"
       on:click={() => { dispatch('reset'); scrollToSection('jobs-section'); }}
     >
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-700 via-indigo-600 to-teal-500 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
-        <Stethoscope class="w-5 h-5" />
+      <div class="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-700 text-white shadow-md shadow-emerald-900/15 transition-transform duration-200 group-hover:scale-105">
+        <Stethoscope class="h-5 w-5" />
       </div>
       <div>
         <div class="flex items-center space-x-2">
-          <span class="text-xl font-bold tracking-tight text-slate-900 group-hover:text-blue-700 transition-colors">
-            Pulse<span class="text-blue-600">Careers</span>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-emerald-800">
+            Pulse<span class="text-emerald-700">Careers</span>
           </span>
-          <span class="hidden sm:inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
-            <ShieldCheck class="w-3 h-3 text-blue-600" />
+          <span class="hidden items-center space-x-1 rounded-full border border-emerald-200/80 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 sm:inline-flex">
+            <ShieldCheck class="h-3 w-3 text-emerald-700" />
             <span>Healthcare</span>
           </span>
         </div>
@@ -74,11 +74,11 @@
     </button>
 
     <!-- Desktop Center Nav Links -->
-    <nav class="hidden lg:flex items-center space-x-1 text-sm font-semibold text-slate-600">
+    <nav class="hidden items-center space-x-1 text-[13px] font-semibold text-slate-600 lg:flex">
       <button
         type="button"
         on:click={() => scrollToSection('jobs-section')}
-        class="px-3.5 py-2 rounded-lg hover:text-blue-700 hover:bg-slate-100/80 transition-colors cursor-pointer"
+        class="cursor-pointer rounded-lg px-3.5 py-2 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
       >
         Explore Jobs
       </button>
@@ -86,7 +86,7 @@
       <button
         type="button"
         on:click={() => scrollToSection('categories-section')}
-        class="px-3.5 py-2 rounded-lg hover:text-blue-700 hover:bg-slate-100/80 transition-colors cursor-pointer"
+        class="cursor-pointer rounded-lg px-3.5 py-2 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
       >
         Specialties
       </button>
@@ -94,7 +94,7 @@
       <button
         type="button"
         on:click={() => scrollToSection('why-section')}
-        class="px-3.5 py-2 rounded-lg hover:text-blue-700 hover:bg-slate-100/80 transition-colors cursor-pointer"
+        class="cursor-pointer rounded-lg px-3.5 py-2 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
       >
         Why PulseCareers
       </button>
@@ -102,7 +102,7 @@
       <button
         type="button"
         on:click={() => dispatch('openSavedJobs')}
-        class="px-3.5 py-2 rounded-lg hover:text-blue-700 hover:bg-slate-100/80 transition-colors flex items-center space-x-1.5 cursor-pointer"
+        class="flex cursor-pointer items-center space-x-1.5 rounded-lg px-3.5 py-2 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
       >
         <Bookmark class="w-4 h-4 text-slate-500" />
         <span>Saved</span>
@@ -116,7 +116,7 @@
       <button
         type="button"
         on:click={() => dispatch('openApplications')}
-        class="px-3.5 py-2 rounded-lg hover:text-blue-700 hover:bg-slate-100/80 transition-colors flex items-center space-x-1.5 cursor-pointer"
+        class="flex cursor-pointer items-center space-x-1.5 rounded-lg px-3.5 py-2 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
       >
         <FileText class="w-4 h-4 text-slate-500" />
         <span>Applications</span>
@@ -253,7 +253,7 @@
       <button
         type="button"
         on:click={() => dispatch('openPostJob')}
-        class="inline-flex items-center space-x-2 px-4 py-2.2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs shadow-blue-500/20 active:scale-98 transition-all cursor-pointer"
+        class="inline-flex cursor-pointer items-center space-x-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-900/15 transition-all hover:bg-emerald-800 active:scale-[0.98]"
       >
         <PlusCircle class="w-4 h-4" />
         <span>Post a Job</span>
