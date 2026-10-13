@@ -3,6 +3,7 @@ import { JobsController } from '../app/controllers/jobs_controller.js';
 import { ApplicationsController } from '../app/controllers/applications_controller.js';
 import { N8nWebhooksController } from '../app/controllers/n8n_webhooks_controller.js';
 import { AuthController } from '../app/controllers/auth_controller.js';
+import { SupportTicketsController } from '../app/controllers/support_tickets_controller.js';
 import { HimalayasService } from '../app/services/himalayas_service.js';
 
 export const router = Router();
@@ -26,6 +27,11 @@ router.post('/api/auth/signup', AuthController.signup);
 router.post('/api/auth/login', AuthController.login);
 router.get('/api/auth/me', AuthController.me);
 router.post('/api/auth/logout', AuthController.logout);
+
+// Authenticated customer support requests; ticket administration is role-checked in the controller.
+router.get('/api/v1/support/tickets', SupportTicketsController.index);
+router.post('/api/v1/support/tickets', SupportTicketsController.create);
+router.patch('/api/v1/support/tickets/:id', SupportTicketsController.update);
 
 // Job Endpoints
 router.get('/api/v1/jobs', JobsController.index);

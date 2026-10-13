@@ -1,7 +1,19 @@
-import type { Job, JobFilterParams, PaginatedJobResponse, CandidateApplication } from './types';
+import type {
+  CandidateApplication,
+  Job,
+  JobFilterParams,
+  PaginatedJobResponse,
+  SupportTicket,
+  SupportTicketStatus
+} from './types';
 
 const ADONIS_BASE = import.meta.env.VITE_ADONIS_API_URL || 'http://localhost:3333/api/v1';
 const EXPRESS_BASE = import.meta.env.VITE_EXPRESS_API_URL || 'http://localhost:5000/api';
+
+async function supportErrorMessage(response: Response, fallback: string): Promise<string> {
+  const data = await response.json().catch(() => ({}));
+  return typeof data.message === 'string' ? data.message : fallback;
+}
 
 export class ApiService {
   /**
@@ -241,5 +253,55 @@ export class ApiService {
       token: `pulse_tk_local_${Date.now()}`,
       user: newUser
     };
+  }
+
+  public static async getSupportTickets(token: string): Promise<SupportTicket[]> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not load support requests.'));
+    }
+    const result: { success: boolean; data: SupportTicket[] } = await response.json();
+    return result.data;
+  }
+
+  public static async createSupportTicket(
+    token: string,
+    payload: Pick<SupportTicket, 'subject' | 'category' | 'priority' | 'message'>
+  ): Promise<SupportTicket> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not submit your support request.'));
+    }
+    const result: { success: boolean; data: SupportTicket } = await response.json();
+    return result.data;
+  }
+
+  public static async updateSupportTicket(
+    token: string,
+    ticketId: string,
+    payload: { status: SupportTicketStatus; staffReply?: string }
+  ): Promise<SupportTicket> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets/${encodeURIComponent(ticketId)}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not update the support request.'));
+    }
+    const result: { success: boolean; data: SupportTicket } = await response.json();
+    return result.data;
   }
 }
