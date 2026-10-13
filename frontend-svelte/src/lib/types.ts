@@ -91,6 +91,31 @@ export interface TrackedApplication {
   appliedAt: string;
 }
 
+export type SupportTicketCategory =
+  | 'Account access'
+  | 'Applications'
+  | 'Job listings'
+  | 'Employer support'
+  | 'Other';
+
+export type SupportTicketPriority = 'low' | 'normal' | 'high';
+export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  category: SupportTicketCategory;
+  priority: SupportTicketPriority;
+  status: SupportTicketStatus;
+  message: string;
+  staffReply?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type UserRole = 'candidate' | 'employer' | 'admin';
 
 export interface User {

@@ -13,7 +13,9 @@
     User as UserIcon,
     ChevronDown,
     Building2,
-    Sparkles
+    Sparkles,
+    LifeBuoy,
+    LayoutDashboard
   } from 'lucide-svelte';
   import { savedJobs, trackedApplications, currentUser, logoutUser } from '../stores';
 
@@ -126,10 +128,28 @@
           </span>
         {/if}
       </button>
+      {#if $currentUser?.role === 'admin'}
+        <button
+          type="button"
+          on:click={() => dispatch('openAdminDashboard')}
+          class="flex cursor-pointer items-center space-x-1.5 rounded-lg px-3.5 py-2 font-bold text-emerald-800 transition-colors hover:bg-emerald-50"
+        >
+          <LayoutDashboard class="h-4 w-4" />
+          <span>Admin</span>
+        </button>
+      {/if}
     </nav>
 
     <!-- Right Actions -->
-    <div class="hidden sm:flex items-center space-x-3">
+    <div class="hidden items-center space-x-2 sm:flex">
+      <button
+        type="button"
+        on:click={() => dispatch('openSupport')}
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
+      >
+        <LifeBuoy class="h-4 w-4" />
+        <span>Help</span>
+      </button>
       <!-- Live Sync Status -->
       <div class="hidden xl:flex items-center space-x-2 text-xs font-semibold px-3 py-1 rounded-full {isBackendLive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
         <span class="relative flex h-2 w-2">
@@ -162,7 +182,7 @@
                   <span>{$currentUser.specialty || 'Clinician'}</span>
                 {:else}
                   <span class="inline-block w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-                  <span>Employer</span>
+                  <span>{$currentUser.role === 'admin' ? 'Administrator' : 'Employer'}</span>
                 {/if}
               </div>
             </div>
@@ -191,6 +211,16 @@
               </div>
 
               <div class="py-1 text-xs text-slate-700">
+                {#if $currentUser.role === 'admin'}
+                  <button
+                    type="button"
+                    on:click={() => { isUserDropdownOpen = false; dispatch('openAdminDashboard'); }}
+                    class="flex w-full items-center gap-2 px-4 py-2 text-left font-semibold text-emerald-800 hover:bg-emerald-50"
+                  >
+                    <LayoutDashboard class="h-3.5 w-3.5" />
+                    <span>Customer support dashboard</span>
+                  </button>
+                {/if}
                 <button
                   type="button"
                   on:click={() => { isUserDropdownOpen = false; dispatch('openSavedJobs'); }}
@@ -362,6 +392,24 @@
       >
         Why PulseCareers
       </button>
+      <button
+        type="button"
+        on:click={() => { isMobileMenuOpen = false; dispatch('openSupport'); }}
+        class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-800"
+      >
+        <LifeBuoy class="h-4 w-4" />
+        Customer support
+      </button>
+      {#if $currentUser?.role === 'admin'}
+        <button
+          type="button"
+          on:click={() => { isMobileMenuOpen = false; dispatch('openAdminDashboard'); }}
+          class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold text-emerald-800 hover:bg-emerald-50"
+        >
+          <LayoutDashboard class="h-4 w-4" />
+          Customer support dashboard
+        </button>
+      {/if}
       <button
         type="button"
         on:click={() => { isMobileMenuOpen = false; dispatch('openSavedJobs'); }}

@@ -16,7 +16,9 @@
   import JobAlertsCTA from './lib/components/JobAlertsCTA.svelte';
   import Footer from './lib/components/Footer.svelte';
   import Toast from './lib/components/Toast.svelte';
+  import SupportDashboard from './lib/components/SupportDashboard.svelte';
   import { ApiService } from './lib/api';
+  import { currentUser } from './lib/stores';
   import type { Job, JobFilterParams, PaginatedJobResponse } from './lib/types';
 
   let jobs: Job[] = [];
@@ -42,6 +44,8 @@
   let isCandidateDrawerOpen = false;
   let candidateDrawerTab: 'saved' | 'applications' = 'saved';
   let isPostJobModalOpen = false;
+  let isSupportOpen = false;
+  let isAdminDashboardOpen = false;
 
   // Auth Modal state
   let isAuthModalOpen = false;
@@ -168,6 +172,11 @@
     isCandidateDrawerOpen = true;
   }
 
+  function openSupportLogin() {
+    isSupportOpen = false;
+    handleOpenLogin();
+  }
+
   onMount(() => {
     loadJobs();
   });
@@ -180,11 +189,25 @@
     on:reset={handleReset}
     on:openSavedJobs={openSavedJobs}
     on:openApplications={openApplications}
+    on:openSupport={() => (isSupportOpen = true)}
+    on:openAdminDashboard={() => {
+      if ($currentUser?.role === 'admin') isAdminDashboardOpen = true;
+    }}
     on:openPostJob={() => (isPostJobModalOpen = true)}
     on:openLogin={handleOpenLogin}
     on:openSignup={() => handleOpenSignup('candidate')}
-    on:logout={() => showToast('Signed out of PulseCareers.', 'success')}
+    on:logout={() => {
+      isAdminDashboardOpen = false;
+      isSupportOpen = false;
+      showToast('Signed out of PulseCareers.', 'success');
+    }}
   />
+
+  {#if isAdminDashboardOpen && $currentUser?.role === 'admin'}
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-[#f6f8f7]">
+      <SupportDashboard adminView on:close={() => (isAdminDashboardOpen = false)} />
+    </div>
+  {/if}
 
   <!-- Hero Section with Dual Search -->
   <Hero
@@ -457,4 +480,10 @@
     type={toastType}
     onDismiss={() => (toastMessage = '')}
   />
+  {#if isSupportOpen}
+    <SupportDashboard
+      on:close={() => (isSupportOpen = false)}
+      on:openLogin={openSupportLogin}
+    />
+  {/if}
 </div>
