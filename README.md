@@ -180,7 +180,7 @@ npm run docker:up
 
 ### Customer Support & Admin Dashboard
 
-Signed-in customers can open **Help** in the Svelte app to submit and track support requests. Configure the administrator account on the backend only; never use `VITE_` variables for admin credentials:
+Signed-in customers can open **Help** in the Svelte app to submit and track support requests. Configure the administrator account on the backend only; never use `VITE_` variables for admin credentials. For local development, make these available to the backend process (or place them in `backend-adonis/.env`); Docker Compose reads them from the repository root `.env`:
 
 ```env
 ADMIN_EMAIL=support-admin@your-domain.example

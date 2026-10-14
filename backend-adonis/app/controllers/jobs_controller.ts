@@ -4,6 +4,8 @@ import { HimalayasService } from '../services/himalayas_service.js';
 import { N8nDispatcherService } from '../services/n8n_dispatcher_service.js';
 import { JobValidator } from '../validators/job_validator.js';
 import type { Job } from '../../../shared/types/job.js';
+import { AuthController } from './auth_controller.js';
+import { RazorpayController } from './razorpay_controller.js';
 
 export class JobsController {
   /**
@@ -73,6 +75,8 @@ export class JobsController {
    * Triggers n8n webhook notification
    */
   public static async store(req: Request, res: Response): Promise<void> {
+    let claimedPaymentOrder: { id: string; userId: string } | null = null;
+    let jobSaved = false;
     try {
       const validation = JobValidator.validateManualJob(req.body);
 
@@ -83,6 +87,24 @@ export class JobsController {
           errors: validation.errors
         });
         return;
+      }
+
+      const paymentOrderId = req.body?.paymentOrderId;
+      if (paymentOrderId !== undefined) {
+        const user = AuthController.getAuthenticatedUser(req);
+        if (!user) {
+          res.status(401).json({ success: false, message: 'Sign in to attach an optional Razorpay contribution to this post.' });
+          return;
+        }
+        if (user.role !== 'employer' || typeof paymentOrderId !== 'string') {
+          res.status(403).json({ success: false, message: 'A verified employer payment is required.' });
+          return;
+        }
+        if (!RazorpayController.claimOrderForJob(paymentOrderId, user.id)) {
+          res.status(409).json({ success: false, message: 'This Razorpay payment is not verified, belongs to another account, or has already been used.' });
+          return;
+        }
+        claimedPaymentOrder = { id: paymentOrderId, userId: user.id };
       }
 
       const p = validation.data;
@@ -124,6 +146,10 @@ export class JobsController {
 
       // Persist to store
       await HimalayasService.saveManualJob(newJob);
+      jobSaved = true;
+      if (claimedPaymentOrder) {
+        RazorpayController.consumeClaim(claimedPaymentOrder.id, claimedPaymentOrder.userId);
+      }
 
       // Async trigger n8n event
       N8nDispatcherService.dispatchNewJob(newJob).catch(err => {
@@ -136,6 +162,13 @@ export class JobsController {
         data: newJob
       });
     } catch (error: unknown) {
+      if (claimedPaymentOrder && !jobSaved) {
+        try {
+          RazorpayController.releaseClaim(claimedPaymentOrder.id, claimedPaymentOrder.userId);
+        } catch (releaseError) {
+          console.error('[JobsController] Could not release Razorpay order claim:', releaseError);
+        }
+      }
       console.error('[JobsController] Error creating job:', error);
       res.status(500).json({
         success: false,

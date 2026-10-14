@@ -69,6 +69,17 @@ export interface PaginatedJobResponse {
   };
 }
 
+export interface RazorpayConfig {
+  enabled: boolean;
+  keyId?: string;
+}
+
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: 'INR';
+}
+
 export interface CandidateApplication {
   jobGuid: string;
   candidateName: string;
