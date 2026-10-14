@@ -178,6 +178,28 @@ npm run sync:healthcare
 npm run docker:up
 ```
 
+### Customer Support & Admin Dashboard
+
+Signed-in customers can open **Help** in the Svelte app to submit and track support requests. Configure the administrator account on the backend only; never use `VITE_` variables for admin credentials. For local development, make these available to the backend process (or place them in `backend-adonis/.env`); Docker Compose reads them from the repository root `.env`:
+
+```env
+ADMIN_EMAIL=support-admin@your-domain.example
+ADMIN_PASSWORD=use-a-long-unique-secret
+```
+
+The Adonis service provisions this account on startup. Sign in through the regular sign-in form to access the **Admin** dashboard. Support requests and account records are stored in `backend-adonis/data/`; Docker mounts this directory to the persistent `backenddata` volume. Back up and protect this data, and do not include patient or sensitive health information in support messages.
+
+### Optional Razorpay Contributions
+
+Job postings remain free. Employers can optionally contribute any amount from ₹1 to ₹10,00,000 during posting; the contribution does not affect listing placement. Configure Razorpay test or live keys only on the backend (or in the root `.env` used by Docker Compose):
+
+```env
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+```
+
+Never expose the secret in a `VITE_` variable. Checkout creates a server-side Razorpay order, verifies the checkout signature and captured payment with Razorpay, and only then accepts that single-use order reference with the job post. Payment orders are persisted in `backend-adonis/data/razorpay-orders.json` and included in the Docker `backenddata` volume. With keys unset, free job posts continue to work and the contribution option is disabled.
+
 ---
 
 ## 🤖 Python + n8n Synergy
@@ -199,6 +221,12 @@ The platform links **Python Intelligence** with **n8n Automation**:
 | `GET` | `/api/v1/jobs/:guid` | Single healthcare job details by GUID | AdonisJS (3333) |
 | `POST` | `/api/v1/jobs` | Recruiter post job (Triggers n8n) | AdonisJS (3333) |
 | `POST` | `/api/v1/applications` | Candidate submit application (Triggers n8n) | AdonisJS (3333) |
+| `GET` | `/api/v1/support/tickets` | List the signed-in user’s support requests (admins see all) | AdonisJS (3333) |
+| `POST` | `/api/v1/support/tickets` | Create a support request for the signed-in user | AdonisJS (3333) |
+| `PATCH` | `/api/v1/support/tickets/:id` | Update support status and staff reply (admin only) | AdonisJS (3333) |
+| `GET` | `/api/v1/payments/razorpay/config` | Check optional Razorpay availability | AdonisJS (3333) |
+| `POST` | `/api/v1/payments/razorpay/orders` | Create an authenticated employer contribution order | AdonisJS (3333) |
+| `POST` | `/api/v1/payments/razorpay/verify` | Verify Razorpay signature and captured payment | AdonisJS (3333) |
 | `POST` | `/api/v1/jobs/filter` | Filters raw jobs array to 100% healthcare | Python (8000) |
 | `POST` | `/api/v1/jobs/sync` | Scrapes & filters Himalayas healthcare jobs | Python (8000) |
 | `POST` | `/api/v1/candidates/analyze-resume`| Analyzes medical credentials & state licenses | Python (8000) |

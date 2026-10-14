@@ -29,3 +29,8 @@ build/
 .vite/
 
 .vercel
+
+# Runtime accounts and customer support records
+backend-adonis/data/users.json
+backend-adonis/data/support-tickets.json
+backend-adonis/data/razorpay-orders.json

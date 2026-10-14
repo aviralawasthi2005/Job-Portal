@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { RefreshCw, AlertTriangle, Briefcase, ChevronLeft, ChevronRight, Filter, ShieldCheck, Sparkles } from 'lucide-svelte';
+  import { RefreshCw, AlertTriangle, Briefcase, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-svelte';
   import Navbar from './lib/components/Navbar.svelte';
   import Hero from './lib/components/Hero.svelte';
   import TrustedEmployers from './lib/components/TrustedEmployers.svelte';
@@ -16,7 +16,9 @@
   import JobAlertsCTA from './lib/components/JobAlertsCTA.svelte';
   import Footer from './lib/components/Footer.svelte';
   import Toast from './lib/components/Toast.svelte';
+  import SupportDashboard from './lib/components/SupportDashboard.svelte';
   import { ApiService } from './lib/api';
+  import { currentUser } from './lib/stores';
   import type { Job, JobFilterParams, PaginatedJobResponse } from './lib/types';
 
   let jobs: Job[] = [];
@@ -42,6 +44,8 @@
   let isCandidateDrawerOpen = false;
   let candidateDrawerTab: 'saved' | 'applications' = 'saved';
   let isPostJobModalOpen = false;
+  let isSupportOpen = false;
+  let isAdminDashboardOpen = false;
 
   // Auth Modal state
   let isAuthModalOpen = false;
@@ -168,23 +172,42 @@
     isCandidateDrawerOpen = true;
   }
 
+  function openSupportLogin() {
+    isSupportOpen = false;
+    handleOpenLogin();
+  }
+
   onMount(() => {
     loadJobs();
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
+<div class="min-h-screen flex flex-col bg-[#f6f8f7] text-slate-900 selection:bg-emerald-700 selection:text-white">
   <!-- Navbar -->
   <Navbar
     {isBackendLive}
     on:reset={handleReset}
     on:openSavedJobs={openSavedJobs}
     on:openApplications={openApplications}
+    on:openSupport={() => (isSupportOpen = true)}
+    on:openAdminDashboard={() => {
+      if ($currentUser?.role === 'admin') isAdminDashboardOpen = true;
+    }}
     on:openPostJob={() => (isPostJobModalOpen = true)}
     on:openLogin={handleOpenLogin}
     on:openSignup={() => handleOpenSignup('candidate')}
-    on:logout={() => showToast('Signed out of PulseCareers.', 'success')}
+    on:logout={() => {
+      isAdminDashboardOpen = false;
+      isSupportOpen = false;
+      showToast('Signed out of PulseCareers.', 'success');
+    }}
   />
+
+  {#if isAdminDashboardOpen && $currentUser?.role === 'admin'}
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-[#f6f8f7]">
+      <SupportDashboard adminView on:close={() => (isAdminDashboardOpen = false)} />
+    </div>
+  {/if}
 
   <!-- Hero Section with Dual Search -->
   <Hero
@@ -209,27 +232,31 @@
   />
 
   <!-- Main Marketplace Search & Job Listing Section -->
-  <section id="jobs-section" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <section id="jobs-section" class="mx-auto w-full max-w-7xl flex-1 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
     <!-- Section Title & Status Strip -->
     <div class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-black text-slate-900 tracking-tight">
-            Healthcare Career Opportunities
+          <div class="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.17em] text-emerald-800">
+            <ShieldCheck class="h-4 w-4" />
+            A more focused job search
+          </div>
+          <h2 class="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+            Find your next opportunity
           </h2>
-          <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
             Browse verified clinical roles, telehealth positions, and medical informatics leadership.
           </p>
         </div>
 
         <div class="flex items-center space-x-2">
           {#if selectedCategory !== 'All'}
-            <span class="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+            <span class="inline-flex items-center space-x-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
               <span>{selectedCategory}</span>
               <button
                 type="button"
                 on:click={() => { selectedCategory = 'All'; loadJobs(); }}
-                class="hover:text-blue-950 font-black ml-1 cursor-pointer"
+                class="ml-1 cursor-pointer font-black hover:text-emerald-950"
                 title="Clear category"
               >×</button>
             </span>
@@ -238,7 +265,7 @@
           <button
             type="button"
             on:click={loadJobs}
-            class="px-3.5 py-1.8 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 hover:text-blue-700 hover:border-slate-300 shadow-2xs flex items-center space-x-1.5 cursor-pointer transition-colors"
+            class="flex cursor-pointer items-center space-x-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-emerald-300 hover:text-emerald-800"
           >
             <RefreshCw class="w-3.5 h-3.5 {isLoading ? 'animate-spin text-blue-600' : ''}" />
             <span>Refresh</span>
@@ -248,9 +275,9 @@
     </div>
 
     <!-- 2-Column Marketplace Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+    <div class="grid grid-cols-1 items-start gap-7 lg:grid-cols-4 lg:gap-8">
       <!-- Left Sidebar: Filters -->
-      <div class="lg:col-span-1 sticky top-22">
+      <div class="lg:sticky lg:top-24 lg:col-span-1">
         <JobFilters
           {selectedCategory}
           {selectedWorkplace}
@@ -262,25 +289,26 @@
       </div>
 
       <!-- Right Area: Results Grid -->
-      <div class="lg:col-span-3 space-y-6">
+      <div class="space-y-5 lg:col-span-3">
         <!-- Results Header Count -->
-        <div class="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-          <span class="text-xs sm:text-sm font-bold text-slate-800">
+        <div class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+          <span class="text-xs font-bold text-slate-800 sm:text-sm">
             {#if isLoading}
               Screening verified healthcare positions...
             {:else}
-              Showing <span class="text-blue-700 font-extrabold">{jobs.length}</span> of {totalJobs} Verified Opportunities
+              Showing <span class="font-extrabold text-emerald-800">{jobs.length}</span> of {totalJobs} opportunities
             {/if}
           </span>
 
-          <span class="text-[11px] font-semibold text-slate-400 hidden sm:block">
-            Updated live via Himalayas & n8n
+          <span class="hidden items-center gap-1.5 text-[11px] font-semibold text-slate-400 sm:flex">
+            <span class="h-1.5 w-1.5 rounded-full {isBackendLive ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+            {isBackendLive ? 'Live job feed' : 'Service reconnecting'}
           </span>
         </div>
 
         <!-- Loading State: Professional Skeleton Cards -->
         {#if isLoading}
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4">
             {#each Array(6) as _}
               <div class="bg-white rounded-2xl p-6 border border-slate-200 animate-pulse space-y-4">
                 <div class="flex space-x-3.5">
@@ -315,8 +343,8 @@
           </div>
         {:else if jobs.length === 0}
           <!-- Empty State -->
-          <div class="bg-white border border-slate-200/90 rounded-2xl p-14 text-center space-y-4 shadow-2xs">
-            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+          <div class="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-10 text-center shadow-sm sm:p-14">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
               <Briefcase class="w-7 h-7" />
             </div>
             <h3 class="text-lg font-bold text-slate-900">No matching healthcare positions found</h3>
@@ -326,14 +354,14 @@
             <button
               type="button"
               on:click={handleReset}
-              class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 cursor-pointer transition-colors shadow-2xs"
+              class="cursor-pointer rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
             >
               Reset All Filters
             </button>
           </div>
         {:else}
           <!-- Jobs Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4">
             {#each jobs as job (job.guid)}
               <JobCard
                 {job}
@@ -452,4 +480,10 @@
     type={toastType}
     onDismiss={() => (toastMessage = '')}
   />
+  {#if isSupportOpen}
+    <SupportDashboard
+      on:close={() => (isSupportOpen = false)}
+      on:openLogin={openSupportLogin}
+    />
+  {/if}
 </div>

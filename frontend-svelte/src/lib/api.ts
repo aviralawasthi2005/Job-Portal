@@ -1,7 +1,21 @@
-import type { Job, JobFilterParams, PaginatedJobResponse, CandidateApplication } from './types';
+import type {
+  CandidateApplication,
+  Job,
+  JobFilterParams,
+  PaginatedJobResponse,
+  RazorpayConfig,
+  RazorpayOrder,
+  SupportTicket,
+  SupportTicketStatus
+} from './types';
 
 const ADONIS_BASE = import.meta.env.VITE_ADONIS_API_URL || 'http://localhost:3333/api/v1';
 const EXPRESS_BASE = import.meta.env.VITE_EXPRESS_API_URL || 'http://localhost:5000/api';
+
+async function supportErrorMessage(response: Response, fallback: string): Promise<string> {
+  const data = await response.json().catch(() => ({}));
+  return typeof data.message === 'string' ? data.message : fallback;
+}
 
 export class ApiService {
   /**
@@ -79,26 +93,77 @@ export class ApiService {
   /**
    * Post a new healthcare position
    */
-  public static async postJob(payload: any): Promise<{ success: boolean; data?: Job; message: string }> {
+  public static async postJob(
+    payload: any,
+    token?: string,
+    paymentOrderId?: string
+  ): Promise<{ success: boolean; data?: Job; message: string }> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const body = JSON.stringify(paymentOrderId ? { ...payload, paymentOrderId } : payload);
+
+    let adonisResponse: Response | undefined;
     try {
-      const res = await fetch(`${ADONIS_BASE}/jobs`, {
+      adonisResponse = await fetch(`${ADONIS_BASE}/jobs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers,
+        body
       });
-      if (res.ok) {
-        return await res.json();
+    } catch (error) {
+      if (paymentOrderId) {
+        throw new Error('Could not reach the payment-enabled job service. Your verified payment has not been applied to a job post; retry when the service is available.', { cause: error });
       }
-    } catch {
       // Fallback to Express manual job endpoint
     }
 
+    if (adonisResponse?.ok) return adonisResponse.json();
+    if (paymentOrderId && adonisResponse) {
+      throw new Error(await supportErrorMessage(adonisResponse, 'Could not publish the paid job post.'));
+    }
+    if (paymentOrderId) {
+      throw new Error('Could not publish the paid job post.');
+    }
     const expressRes = await fetch(`${EXPRESS_BASE}/jobs/manual`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     return await expressRes.json();
+  }
+
+  public static async getRazorpayConfig(): Promise<RazorpayConfig> {
+    const response = await fetch(`${ADONIS_BASE}/payments/razorpay/config`);
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not check payment availability.'));
+    }
+    return response.json();
+  }
+
+  public static async createRazorpayOrder(token: string, amount: number): Promise<{ order: RazorpayOrder; keyId: string }> {
+    const response = await fetch(`${ADONIS_BASE}/payments/razorpay/orders`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount })
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not start Razorpay checkout.'));
+    }
+    const result: { success: boolean; data: RazorpayOrder; keyId: string } = await response.json();
+    return { order: result.data, keyId: result.keyId };
+  }
+
+  public static async verifyRazorpayPayment(
+    token: string,
+    payment: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }
+  ): Promise<void> {
+    const response = await fetch(`${ADONIS_BASE}/payments/razorpay/verify`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payment)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not verify Razorpay payment.'));
+    }
   }
 
   /**
@@ -241,5 +306,55 @@ export class ApiService {
       token: `pulse_tk_local_${Date.now()}`,
       user: newUser
     };
+  }
+
+  public static async getSupportTickets(token: string): Promise<SupportTicket[]> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not load support requests.'));
+    }
+    const result: { success: boolean; data: SupportTicket[] } = await response.json();
+    return result.data;
+  }
+
+  public static async createSupportTicket(
+    token: string,
+    payload: Pick<SupportTicket, 'subject' | 'category' | 'priority' | 'message'>
+  ): Promise<SupportTicket> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not submit your support request.'));
+    }
+    const result: { success: boolean; data: SupportTicket } = await response.json();
+    return result.data;
+  }
+
+  public static async updateSupportTicket(
+    token: string,
+    ticketId: string,
+    payload: { status: SupportTicketStatus; staffReply?: string }
+  ): Promise<SupportTicket> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets/${encodeURIComponent(ticketId)}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not update the support request.'));
+    }
+    const result: { success: boolean; data: SupportTicket } = await response.json();
+    return result.data;
   }
 }
