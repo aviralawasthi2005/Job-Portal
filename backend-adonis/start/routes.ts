@@ -33,6 +33,7 @@ router.post('/api/auth/logout', AuthController.logout);
 router.get('/api/v1/support/tickets', SupportTicketsController.index);
 router.post('/api/v1/support/tickets', SupportTicketsController.create);
 router.patch('/api/v1/support/tickets/:id', SupportTicketsController.update);
+router.post('/api/v1/support/tickets/:id/messages', SupportTicketsController.addMessage);
 
 // Optional employer contributions for job posts.
 router.get('/api/v1/payments/razorpay/config', RazorpayController.config);

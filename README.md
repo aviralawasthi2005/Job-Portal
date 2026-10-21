@@ -187,7 +187,7 @@ ADMIN_EMAIL=support-admin@your-domain.example
 ADMIN_PASSWORD=use-a-long-unique-secret
 ```
 
-The Adonis service provisions this account on startup. Sign in through the regular sign-in form to access the **Admin** dashboard. Support requests and account records are stored in `backend-adonis/data/`; Docker mounts this directory to the persistent `backenddata` volume. Back up and protect this data, and do not include patient or sensitive health information in support messages.
+The Adonis service provisions this account on startup. Sign in through the regular sign-in form to access the **Admin** dashboard. Customers and admins can exchange persistent messages in each ticket conversation; open conversations refresh automatically while the support view is open. Customers can only access their own conversations, while admins can respond to all tickets. Support requests and account records are stored in `backend-adonis/data/`; Docker mounts this directory to the persistent `backenddata` volume. Back up and protect this data, and do not include patient or sensitive health information in support messages.
 
 ### Optional Razorpay Contributions
 
@@ -223,7 +223,8 @@ The platform links **Python Intelligence** with **n8n Automation**:
 | `POST` | `/api/v1/applications` | Candidate submit application (Triggers n8n) | AdonisJS (3333) |
 | `GET` | `/api/v1/support/tickets` | List the signed-in user’s support requests (admins see all) | AdonisJS (3333) |
 | `POST` | `/api/v1/support/tickets` | Create a support request for the signed-in user | AdonisJS (3333) |
-| `PATCH` | `/api/v1/support/tickets/:id` | Update support status and staff reply (admin only) | AdonisJS (3333) |
+| `POST` | `/api/v1/support/tickets/:id/messages` | Add a message to a support conversation (ticket owner or admin) | AdonisJS (3333) |
+| `PATCH` | `/api/v1/support/tickets/:id` | Update support status (admin only) | AdonisJS (3333) |
 | `GET` | `/api/v1/payments/razorpay/config` | Check optional Razorpay availability | AdonisJS (3333) |
 | `POST` | `/api/v1/payments/razorpay/orders` | Create an authenticated employer contribution order | AdonisJS (3333) |
 | `POST` | `/api/v1/payments/razorpay/verify` | Verify Razorpay signature and captured payment | AdonisJS (3333) |

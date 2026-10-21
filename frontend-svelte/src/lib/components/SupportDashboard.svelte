@@ -47,11 +47,12 @@
   let category: SupportTicketCategory = 'Account access';
   let priority: SupportTicketPriority = 'normal';
   let message = '';
-  let reply = '';
+  let chatMessage = '';
   let replyStatus: SupportTicketStatus = 'in_progress';
   let isLoading = true;
   let isSubmitting = false;
-  let isSavingReply = false;
+  let isSendingMessage = false;
+  let isSavingStatus = false;
   let errorMessage = '';
   let successMessage = '';
 
@@ -89,20 +90,37 @@
     }).format(new Date(date));
   }
 
-  async function loadTickets() {
+  function formatMessageDate(date: string): string {
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(date));
+  }
+
+  async function loadTickets(showLoading = true) {
     if (!$authToken) {
       tickets = [];
       isLoading = false;
       return;
     }
-    isLoading = true;
-    errorMessage = '';
+    if (showLoading) {
+      isLoading = true;
+      errorMessage = '';
+    }
     try {
-      tickets = await ApiService.getSupportTickets($authToken);
+      const refreshed = await ApiService.getSupportTickets($authToken);
+      tickets = refreshed;
+      if (activeTicket) {
+        activeTicket = refreshed.find((ticket) => ticket.id === activeTicket?.id) || null;
+      }
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Could not load support requests.';
+      if (showLoading) {
+        errorMessage = error instanceof Error ? error.message : 'Could not load support requests.';
+      }
     } finally {
-      isLoading = false;
+      if (showLoading) isLoading = false;
     }
   }
 
@@ -119,6 +137,7 @@
         message
       });
       tickets = [ticket, ...tickets];
+      activeTicket = ticket;
       subject = '';
       category = 'Account access';
       priority = 'normal';
@@ -133,30 +152,46 @@
 
   function selectTicket(ticket: SupportTicket) {
     activeTicket = ticket;
-    reply = ticket.staffReply || '';
+    chatMessage = '';
     replyStatus = ticket.status === 'open' ? 'in_progress' : ticket.status;
     errorMessage = '';
     successMessage = '';
   }
 
-  async function saveReply() {
+  async function sendMessage() {
+    if (!$authToken || !activeTicket || !chatMessage.trim()) return;
+    isSendingMessage = true;
+    errorMessage = '';
+    successMessage = '';
+    try {
+      const updated = await ApiService.sendSupportMessage($authToken, activeTicket.id, chatMessage.trim());
+      tickets = tickets.map((ticket) => ticket.id === updated.id ? updated : ticket);
+      activeTicket = updated;
+      chatMessage = '';
+      replyStatus = updated.status;
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : 'Could not send the chat message.';
+    } finally {
+      isSendingMessage = false;
+    }
+  }
+
+  async function saveStatus() {
     if (!$authToken || !activeTicket) return;
-    isSavingReply = true;
+    isSavingStatus = true;
     errorMessage = '';
     successMessage = '';
     try {
       const updated = await ApiService.updateSupportTicket($authToken, activeTicket.id, {
-        status: replyStatus,
-        staffReply: reply
+        status: replyStatus
       });
       tickets = tickets.map((ticket) => ticket.id === updated.id ? updated : ticket);
       activeTicket = updated;
-      reply = updated.staffReply || '';
       successMessage = 'Support request updated.';
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : 'Could not update the request.';
     } finally {
-      isSavingReply = false;
+      isSavingStatus = false;
     }
   }
 
@@ -166,6 +201,8 @@
 
   onMount(() => {
     void loadTickets();
+    const refreshInterval = window.setInterval(() => void loadTickets(false), 5000);
+    return () => window.clearInterval(refreshInterval);
   });
 </script>
 
@@ -296,22 +333,51 @@
                 <p class="mt-0.5 text-xs text-slate-500">{activeTicket.customerEmail}</p>
                 <p class="mt-2 text-[11px] text-slate-400">{activeTicket.category} · {activeTicket.priority} priority · {formatDate(activeTicket.createdAt)}</p>
               </div>
-              <p class="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{activeTicket.message}</p>
-              <form on:submit|preventDefault={saveReply} class="mt-5 space-y-4 border-t border-slate-100 pt-5">
+              <div class="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+                <div class="mb-3 flex items-center justify-between">
+                  <h3 class="flex items-center gap-2 text-xs font-bold text-slate-800"><MessageSquareText class="h-4 w-4 text-emerald-700" />Conversation</h3>
+                  <span class="text-[10px] text-slate-400">Live updates</span>
+                </div>
+                <div class="max-h-80 space-y-3 overflow-y-auto pr-1" role="log" aria-label="Support conversation" aria-live="polite">
+                  {#each activeTicket.messages as item (item.id)}
+                    {@const isOwnMessage = item.senderId === $currentUser?.id}
+                    <div class="flex {isOwnMessage ? 'justify-end' : 'justify-start'}">
+                      <div class="max-w-[90%] rounded-2xl px-3.5 py-2.5 {isOwnMessage ? 'rounded-br-md bg-emerald-700 text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-800'}">
+                        <div class="mb-1 flex items-center gap-2 text-[10px] {isOwnMessage ? 'text-emerald-100' : 'text-slate-400'}">
+                          <span class="font-bold">{item.senderName}</span>
+                          <span>·</span>
+                          <time datetime={item.createdAt}>{formatMessageDate(item.createdAt)}</time>
+                        </div>
+                        <p class="whitespace-pre-wrap break-words text-xs leading-5">{item.body}</p>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+                <form on:submit|preventDefault={sendMessage} class="mt-3 flex items-end gap-2 border-t border-slate-200 pt-3">
+                  <label class="sr-only" for="admin-chat-message">Write a reply</label>
+                  <textarea
+                    id="admin-chat-message"
+                    bind:value={chatMessage}
+                    rows="2"
+                    maxlength="5000"
+                    placeholder="Write a reply to the customer…"
+                    class="min-h-11 flex-1 resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs leading-5 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  ></textarea>
+                  <button type="submit" disabled={isSendingMessage || !chatMessage.trim()} aria-label="Send reply" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    {#if isSendingMessage}<LoaderCircle class="h-4 w-4 animate-spin" />{:else}<Send class="h-4 w-4" />{/if}
+                  </button>
+                </form>
+              </div>
+              <form on:submit|preventDefault={saveStatus} class="mt-4 flex items-end gap-2 border-t border-slate-100 pt-4">
                 <label class="block text-xs font-bold text-slate-700">
                   Request status
                   <select bind:value={replyStatus} class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600">
                     {#each statuses as status}<option value={status}>{getStatusLabel(status)}</option>{/each}
                   </select>
                 </label>
-                <label class="block text-xs font-bold text-slate-700">
-                  Reply to customer
-                  <textarea bind:value={reply} rows="5" maxlength="5000" placeholder="Write a helpful response…" class="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal leading-5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                  <span class="mt-1 block text-right text-[10px] font-normal text-slate-400">{reply.length}/5000</span>
-                </label>
-                <button type="submit" disabled={isSavingReply} class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">
-                  {#if isSavingReply}<LoaderCircle class="h-4 w-4 animate-spin" />{:else}<Send class="h-4 w-4" />{/if}
-                  Save update
+                <button type="submit" disabled={isSavingStatus} class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                  {#if isSavingStatus}<LoaderCircle class="h-4 w-4 animate-spin" />{:else}<Check class="h-4 w-4" />{/if}
+                  Update status
                 </button>
               </form>
             {:else}
@@ -404,10 +470,45 @@
                       <span class="shrink-0 rounded-full px-2 py-1 text-[9px] font-bold {ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-800' : ticket.status === 'in_progress' ? 'bg-sky-50 text-sky-800' : 'bg-amber-50 text-amber-800'}">{getStatusLabel(ticket.status)}</span>
                     </div>
                     <p class="mt-1 text-[10px] text-slate-400">{ticket.id} · {formatDate(ticket.updatedAt)}</p>
-                    {#if ticket.staffReply}
-                      <div class="mt-3 rounded-lg bg-emerald-50/80 p-3">
-                        <p class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800"><Check class="h-3 w-3" /> Support team reply</p>
-                        <p class="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-700">{ticket.staffReply}</p>
+                    <button
+                      type="button"
+                      on:click={() => activeTicket?.id === ticket.id ? activeTicket = null : selectTicket(ticket)}
+                      class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950"
+                    >
+                      <MessageSquareText class="h-3.5 w-3.5" />
+                      {activeTicket?.id === ticket.id ? 'Close conversation' : `Open conversation (${ticket.messages.length})`}
+                    </button>
+                    {#if activeTicket?.id === ticket.id}
+                      <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                        <div class="max-h-64 space-y-3 overflow-y-auto" role="log" aria-label={`Conversation for ${ticket.subject}`} aria-live="polite">
+                          {#each activeTicket.messages as item (item.id)}
+                            {@const isOwnMessage = item.senderId === $currentUser?.id}
+                            <div class="flex {isOwnMessage ? 'justify-end' : 'justify-start'}">
+                              <div class="max-w-[90%] rounded-2xl px-3 py-2.5 {isOwnMessage ? 'rounded-br-md bg-emerald-700 text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-800'}">
+                                <div class="mb-1 flex items-center gap-2 text-[9px] {isOwnMessage ? 'text-emerald-100' : 'text-slate-400'}">
+                                  <span class="font-bold">{item.senderName}</span>
+                                  <span>·</span>
+                                  <time datetime={item.createdAt}>{formatMessageDate(item.createdAt)}</time>
+                                </div>
+                                <p class="whitespace-pre-wrap break-words text-xs leading-5">{item.body}</p>
+                              </div>
+                            </div>
+                          {/each}
+                        </div>
+                        <form on:submit|preventDefault={sendMessage} class="mt-3 flex items-end gap-2 border-t border-slate-200 pt-3">
+                          <label class="sr-only" for="customer-chat-message">Write a message</label>
+                          <textarea
+                            id="customer-chat-message"
+                            bind:value={chatMessage}
+                            rows="2"
+                            maxlength="5000"
+                            placeholder="Reply to the support team…"
+                            class="min-h-10 flex-1 resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs leading-5 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          ></textarea>
+                          <button type="submit" disabled={isSendingMessage || !chatMessage.trim()} aria-label="Send message" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+                            {#if isSendingMessage}<LoaderCircle class="h-4 w-4 animate-spin" />{:else}<Send class="h-4 w-4" />{/if}
+                          </button>
+                        </form>
                       </div>
                     {/if}
                   </article>

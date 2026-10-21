@@ -357,4 +357,24 @@ export class ApiService {
     const result: { success: boolean; data: SupportTicket } = await response.json();
     return result.data;
   }
+
+  public static async sendSupportMessage(
+    token: string,
+    ticketId: string,
+    body: string
+  ): Promise<SupportTicket> {
+    const response = await fetch(`${ADONIS_BASE}/support/tickets/${encodeURIComponent(ticketId)}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ body })
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not send your support message.'));
+    }
+    const result: { success: boolean; data: SupportTicket } = await response.json();
+    return result.data;
+  }
 }

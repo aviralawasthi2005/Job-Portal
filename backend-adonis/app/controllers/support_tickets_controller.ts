@@ -19,14 +19,25 @@ interface SupportTicket {
   userId: string;
   customerName: string;
   customerEmail: string;
+  customerRole?: 'candidate' | 'employer';
   subject: string;
   category: TicketCategory;
   priority: TicketPriority;
   status: TicketStatus;
   message: string;
   staffReply?: string;
+  messages: SupportTicketMessage[];
   createdAt: string;
   updatedAt: string;
+}
+
+interface SupportTicketMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'candidate' | 'employer' | 'admin';
+  body: string;
+  createdAt: string;
 }
 
 function readTickets(): SupportTicket[] {
@@ -35,7 +46,28 @@ function readTickets(): SupportTicket[] {
   if (!Array.isArray(tickets)) {
     throw new Error('Support ticket data is invalid: expected a JSON array.');
   }
-  return tickets as SupportTicket[];
+  return (tickets as SupportTicket[]).map((ticket) => {
+    if (Array.isArray(ticket.messages)) return ticket;
+    const messages: SupportTicketMessage[] = [{
+      id: `${ticket.id}-initial`,
+      senderId: ticket.userId,
+      senderName: ticket.customerName,
+      senderRole: ticket.customerRole || 'candidate',
+      body: ticket.message,
+      createdAt: ticket.createdAt
+    }];
+    if (ticket.staffReply) {
+      messages.push({
+        id: `${ticket.id}-legacy-reply`,
+        senderId: 'support-admin',
+        senderName: 'Support team',
+        senderRole: 'admin',
+        body: ticket.staffReply,
+        createdAt: ticket.updatedAt
+      });
+    }
+    return { ...ticket, messages };
+  });
 }
 
 function saveTickets(tickets: SupportTicket[]): void {
@@ -94,11 +126,20 @@ export class SupportTicketsController {
         userId: user.id,
         customerName: user.name,
         customerEmail: user.email,
+        customerRole: user.role === 'employer' ? 'employer' : 'candidate',
         subject: subject.trim(),
         category,
         priority,
         status: 'open',
         message: message.trim(),
+        messages: [{
+          id: crypto.randomUUID(),
+          senderId: user.id,
+          senderName: user.name,
+          senderRole: user.role,
+          body: message.trim(),
+          createdAt: now
+        }],
         createdAt: now,
         updatedAt: now
       };
@@ -107,6 +148,54 @@ export class SupportTicketsController {
     } catch (error) {
       console.error('[SupportTicketsController] Could not create support request:', error);
       res.status(500).json({ success: false, message: 'Could not save your support request.' });
+    }
+  }
+
+  public static addMessage(req: Request, res: Response): void {
+    const user = AuthController.getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Sign in to send a support message.' });
+      return;
+    }
+
+    const { body } = req.body || {};
+    if (typeof body !== 'string' || body.trim().length < 1 || body.trim().length > 5000) {
+      res.status(400).json({ success: false, message: 'Message must be between 1 and 5,000 characters.' });
+      return;
+    }
+
+    try {
+      const tickets = readTickets();
+      const ticket = tickets.find((candidate) => candidate.id === req.params.id);
+      if (!ticket) {
+        res.status(404).json({ success: false, message: 'Support request not found.' });
+        return;
+      }
+      if (user.role !== 'admin' && ticket.userId !== user.id) {
+        res.status(403).json({ success: false, message: 'You do not have access to this support conversation.' });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      ticket.messages.push({
+        id: crypto.randomUUID(),
+        senderId: user.id,
+        senderName: user.name,
+        senderRole: user.role,
+        body: body.trim(),
+        createdAt: now
+      });
+      ticket.updatedAt = now;
+      if (user.role === 'admin' && ticket.status === 'open') {
+        ticket.status = 'in_progress';
+      } else if (user.role !== 'admin' && ticket.status === 'resolved') {
+        ticket.status = 'open';
+      }
+      saveTickets(tickets);
+      res.status(201).json({ success: true, data: ticket });
+    } catch (error) {
+      console.error('[SupportTicketsController] Could not add support message:', error);
+      res.status(500).json({ success: false, message: 'Could not send support message.' });
     }
   }
 

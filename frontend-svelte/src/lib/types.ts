@@ -112,6 +112,15 @@ export type SupportTicketCategory =
 export type SupportTicketPriority = 'low' | 'normal' | 'high';
 export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved';
 
+export interface SupportTicketMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  body: string;
+  createdAt: string;
+}
+
 export interface SupportTicket {
   id: string;
   userId: string;
@@ -123,6 +132,7 @@ export interface SupportTicket {
   status: SupportTicketStatus;
   message: string;
   staffReply?: string;
+  messages: SupportTicketMessage[];
   createdAt: string;
   updatedAt: string;
 }
