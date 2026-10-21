@@ -15,7 +15,8 @@
     Building2,
     Sparkles,
     LifeBuoy,
-    LayoutDashboard
+    LayoutDashboard,
+    CreditCard
   } from 'lucide-svelte';
   import { savedJobs, trackedApplications, currentUser, logoutUser } from '../stores';
 
@@ -223,6 +224,14 @@
                 {/if}
                 <button
                   type="button"
+                  on:click={() => { isUserDropdownOpen = false; dispatch('openPaymentDetails'); }}
+                  class="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-slate-50"
+                >
+                  <CreditCard class="h-3.5 w-3.5 text-slate-400" />
+                  <span>Payment details</span>
+                </button>
+                <button
+                  type="button"
                   on:click={() => { isUserDropdownOpen = false; dispatch('openSavedJobs'); }}
                   class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center justify-between"
                 >
@@ -408,6 +417,16 @@
         >
           <LayoutDashboard class="h-4 w-4" />
           Customer support dashboard
+        </button>
+      {/if}
+      {#if $currentUser}
+        <button
+          type="button"
+          on:click={() => { isMobileMenuOpen = false; dispatch('openPaymentDetails'); }}
+          class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-800"
+        >
+          <CreditCard class="h-4 w-4" />
+          Payment details
         </button>
       {/if}
       <button

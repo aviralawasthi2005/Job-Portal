@@ -5,6 +5,7 @@ import { N8nWebhooksController } from '../app/controllers/n8n_webhooks_controlle
 import { AuthController } from '../app/controllers/auth_controller.js';
 import { SupportTicketsController } from '../app/controllers/support_tickets_controller.js';
 import { RazorpayController } from '../app/controllers/razorpay_controller.js';
+import { PaymentDetailsController } from '../app/controllers/payment_details_controller.js';
 import { HimalayasService } from '../app/services/himalayas_service.js';
 
 export const router = Router();
@@ -39,6 +40,8 @@ router.post('/api/v1/support/tickets/:id/messages', SupportTicketsController.add
 router.get('/api/v1/payments/razorpay/config', RazorpayController.config);
 router.post('/api/v1/payments/razorpay/orders', RazorpayController.createOrder);
 router.post('/api/v1/payments/razorpay/verify', RazorpayController.verifyPayment);
+router.get('/api/v1/payments/details', PaymentDetailsController.show);
+router.put('/api/v1/payments/details', PaymentDetailsController.update);
 
 // Job Endpoints
 router.get('/api/v1/jobs', JobsController.index);

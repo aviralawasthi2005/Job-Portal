@@ -17,6 +17,7 @@
   import Footer from './lib/components/Footer.svelte';
   import Toast from './lib/components/Toast.svelte';
   import SupportDashboard from './lib/components/SupportDashboard.svelte';
+  import PaymentDetailsModal from './lib/components/PaymentDetailsModal.svelte';
   import { ApiService } from './lib/api';
   import { currentUser } from './lib/stores';
   import type { Job, JobFilterParams, PaginatedJobResponse } from './lib/types';
@@ -45,6 +46,7 @@
   let candidateDrawerTab: 'saved' | 'applications' = 'saved';
   let isPostJobModalOpen = false;
   let isSupportOpen = false;
+  let isPaymentDetailsOpen = false;
   let isAdminDashboardOpen = false;
 
   // Auth Modal state
@@ -190,6 +192,9 @@
     on:openSavedJobs={openSavedJobs}
     on:openApplications={openApplications}
     on:openSupport={() => (isSupportOpen = true)}
+    on:openPaymentDetails={() => {
+      if ($currentUser) isPaymentDetailsOpen = true;
+    }}
     on:openAdminDashboard={() => {
       if ($currentUser?.role === 'admin') isAdminDashboardOpen = true;
     }}
@@ -484,6 +489,12 @@
     <SupportDashboard
       on:close={() => (isSupportOpen = false)}
       on:openLogin={openSupportLogin}
+    />
+  {/if}
+  {#if isPaymentDetailsOpen && $currentUser}
+    <PaymentDetailsModal
+      on:close={() => (isPaymentDetailsOpen = false)}
+      on:success={() => showToast('Payment details saved securely.', 'success')}
     />
   {/if}
 </div>

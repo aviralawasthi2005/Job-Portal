@@ -3,6 +3,7 @@ import type {
   Job,
   JobFilterParams,
   PaginatedJobResponse,
+  PaymentDetails,
   RazorpayConfig,
   RazorpayOrder,
   SupportTicket,
@@ -164,6 +165,33 @@ export class ApiService {
     if (!response.ok) {
       throw new Error(await supportErrorMessage(response, 'Could not verify Razorpay payment.'));
     }
+  }
+
+  public static async getPaymentDetails(token: string): Promise<PaymentDetails> {
+    const response = await fetch(`${ADONIS_BASE}/payments/details`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not load your payment details.'));
+    }
+    const result: { success: boolean; data: PaymentDetails } = await response.json();
+    return result.data;
+  }
+
+  public static async savePaymentDetails(token: string, details: PaymentDetails): Promise<PaymentDetails> {
+    const response = await fetch(`${ADONIS_BASE}/payments/details`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(details)
+    });
+    if (!response.ok) {
+      throw new Error(await supportErrorMessage(response, 'Could not save your payment details.'));
+    }
+    const result: { success: boolean; data: PaymentDetails } = await response.json();
+    return result.data;
   }
 
   /**

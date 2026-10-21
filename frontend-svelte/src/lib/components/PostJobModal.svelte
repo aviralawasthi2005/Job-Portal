@@ -18,6 +18,7 @@
     name: string;
     description: string;
     order_id: string;
+    method: { upi?: boolean; netbanking?: boolean };
     prefill: { name: string; email: string };
     theme: { color: string };
     handler: (payment: RazorpayPaymentResponse) => void;
@@ -56,6 +57,7 @@
   let contributeToPortal = false;
   let contributionAmount = 500;
   let paymentOrderId = '';
+  let paymentMethod: 'upi' | 'netbanking' = 'upi';
 
   onMount(() => {
     void loadPaymentConfig();
@@ -132,6 +134,10 @@
         name: 'PulseCareers',
         description: 'Optional contribution for your job post',
         order_id: order.id,
+        method: {
+          upi: paymentMethod === 'upi',
+          netbanking: paymentMethod === 'netbanking'
+        },
         prefill: { name: $currentUser.name, email: $currentUser.email },
         theme: { color: '#047857' },
         handler: (payment) => {
@@ -387,6 +393,19 @@
               </span>
             </label>
             {#if contributeToPortal}
+              <fieldset class="mt-4">
+                <legend class="mb-2 block text-xs font-bold text-emerald-900">Payment method</legend>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700">
+                    <input type="radio" name="contribution-method" value="upi" bind:group={paymentMethod} class="h-4 w-4 text-emerald-700 focus:ring-emerald-600" />
+                    UPI
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700">
+                    <input type="radio" name="contribution-method" value="netbanking" bind:group={paymentMethod} class="h-4 w-4 text-emerald-700 focus:ring-emerald-600" />
+                    Bank account (Netbanking)
+                  </label>
+                </div>
+              </fieldset>
               <label for="post-contribution" class="mt-4 block text-xs font-bold text-emerald-900">Contribution amount (INR)</label>
               <div class="mt-1.5 flex max-w-xs items-center rounded-xl border border-emerald-200 bg-white px-3">
                 <span class="pr-2 text-sm font-semibold text-slate-500">₹</span>

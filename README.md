@@ -200,6 +200,8 @@ RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 
 Never expose the secret in a `VITE_` variable. Checkout creates a server-side Razorpay order, verifies the checkout signature and captured payment with Razorpay, and only then accepts that single-use order reference with the job post. Payment orders are persisted in `backend-adonis/data/razorpay-orders.json` and included in the Docker `backenddata` volume. With keys unset, free job posts continue to work and the contribution option is disabled.
 
+Employers can choose UPI or bank account (Netbanking) in checkout. Signed-in users can also manage their own UPI ID and bank payout details from the profile menu. Configure `PAYMENT_DETAILS_ENCRYPTION_KEY` with a unique random secret of at least 32 characters on the backend; keep it stable across restarts and back it up separately from `backend-adonis/data/payment-details.json`. Saved details are encrypted at rest and are available only to their owner through authenticated endpoints. Do not put this key in a `VITE_` variable.
+
 ---
 
 ## 🤖 Python + n8n Synergy
@@ -228,6 +230,8 @@ The platform links **Python Intelligence** with **n8n Automation**:
 | `GET` | `/api/v1/payments/razorpay/config` | Check optional Razorpay availability | AdonisJS (3333) |
 | `POST` | `/api/v1/payments/razorpay/orders` | Create an authenticated employer contribution order | AdonisJS (3333) |
 | `POST` | `/api/v1/payments/razorpay/verify` | Verify Razorpay signature and captured payment | AdonisJS (3333) |
+| `GET` | `/api/v1/payments/details` | Read the signed-in user’s saved payment details | AdonisJS (3333) |
+| `PUT` | `/api/v1/payments/details` | Save or clear encrypted UPI and bank details for the signed-in user | AdonisJS (3333) |
 | `POST` | `/api/v1/jobs/filter` | Filters raw jobs array to 100% healthcare | Python (8000) |
 | `POST` | `/api/v1/jobs/sync` | Scrapes & filters Himalayas healthcare jobs | Python (8000) |
 | `POST` | `/api/v1/candidates/analyze-resume`| Analyzes medical credentials & state licenses | Python (8000) |

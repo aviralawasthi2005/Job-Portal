@@ -80,6 +80,14 @@ export interface RazorpayOrder {
   currency: 'INR';
 }
 
+export interface PaymentDetails {
+  upiId: string;
+  accountHolderName: string;
+  bankName: string;
+  accountNumber: string;
+  ifscCode: string;
+}
+
 export interface CandidateApplication {
   jobGuid: string;
   candidateName: string;
