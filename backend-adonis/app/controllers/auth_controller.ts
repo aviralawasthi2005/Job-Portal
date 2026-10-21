@@ -2,13 +2,10 @@ import type { Request, Response } from 'express';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { N8nDispatcherService } from '../services/n8n_dispatcher_service.js';
 import type { User, UserRole } from '../../../shared/types/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // Ensure data folder
@@ -92,13 +89,47 @@ function persistUsers(): void {
   }
 }
 
+const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (Boolean(adminEmail) !== Boolean(adminPassword)) {
+  throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must both be configured to provision the support administrator.');
+}
+if (adminEmail && adminPassword) {
+  const existingAdmin = usersMap.get(adminEmail);
+  usersMap.set(adminEmail, {
+    ...existingAdmin,
+    id: existingAdmin?.id || `usr-admin-${crypto.randomBytes(6).toString('hex')}`,
+    name: existingAdmin?.name || 'PulseCareers Administrator',
+    email: adminEmail,
+    passwordHash: hashPassword(adminPassword),
+    role: 'admin',
+    createdAt: existingAdmin?.createdAt || new Date().toISOString()
+  });
+  persistUsers();
+}
+
 function sanitizeUser(u: StoredUser | undefined): User | null {
   if (!u) return null;
   const { passwordHash, ...safe } = u;
-  return safe;
+  const isConfiguredAdmin = Boolean(adminEmail && safe.email.toLowerCase() === adminEmail);
+  return isConfiguredAdmin && safe.role === 'admin' ? safe : { ...safe, role: safe.role === 'admin' ? 'candidate' : safe.role };
 }
 
 export class AuthController {
+  public static getAuthenticatedUser(req: Request): User | null {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) return null;
+
+    const session = tokensMap.get(token);
+    if (!session || session.expiresAt < Date.now()) {
+      if (session) tokensMap.delete(token);
+      return null;
+    }
+
+    return sanitizeUser(usersMap.get(session.email));
+  }
+
   /**
    * POST /api/v1/auth/signup
    */
@@ -213,24 +244,14 @@ export class AuthController {
    */
   public static async me(req: Request, res: Response): Promise<void> {
     try {
-      const authHeader = req.headers.authorization;
-      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-      if (!token) {
-        res.status(401).json({ success: false, message: 'No authorization token provided' });
-        return;
-      }
-
-      const session = tokensMap.get(token);
-      if (!session || session.expiresAt < Date.now()) {
+      const user = AuthController.getAuthenticatedUser(req);
+      if (!user) {
         res.status(401).json({ success: false, message: 'Session expired or invalid' });
         return;
       }
-
-      const user = usersMap.get(session.email);
       res.status(200).json({
         success: true,
-        user: sanitizeUser(user)
+        user
       });
     } catch (e: any) {
       res.status(500).json({ success: false, message: 'Profile retrieval error' });

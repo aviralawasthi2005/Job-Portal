@@ -69,6 +69,17 @@ export interface PaginatedJobResponse {
   };
 }
 
+export interface RazorpayConfig {
+  enabled: boolean;
+  keyId?: string;
+}
+
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: 'INR';
+}
+
 export interface CandidateApplication {
   jobGuid: string;
   candidateName: string;
@@ -89,6 +100,31 @@ export interface TrackedApplication {
   clinicalLicense?: string;
   status: 'applied' | 'under_review' | 'shortlisted' | 'interview' | 'offer';
   appliedAt: string;
+}
+
+export type SupportTicketCategory =
+  | 'Account access'
+  | 'Applications'
+  | 'Job listings'
+  | 'Employer support'
+  | 'Other';
+
+export type SupportTicketPriority = 'low' | 'normal' | 'high';
+export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  category: SupportTicketCategory;
+  priority: SupportTicketPriority;
+  status: SupportTicketStatus;
+  message: string;
+  staffReply?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type UserRole = 'candidate' | 'employer' | 'admin';
